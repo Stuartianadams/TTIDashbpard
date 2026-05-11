@@ -1,0 +1,25 @@
+{
+  "name": "tti-dashboard-db",
+  "version": "1.0.0",
+  "description": "TTI Dashboard — database layer (Phase 1)",
+  "scripts": {
+    "db:migrate":   "prisma migrate dev",
+    "db:generate":  "prisma generate",
+    "db:seed":      "ts-node prisma/seed.ts",
+    "db:studio":    "prisma studio",
+    "db:reset":     "prisma migrate reset --force && ts-node prisma/seed.ts",
+    "db:push":      "prisma db push"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.14.0"
+  },
+  "devDependencies": {
+    "prisma":       "^5.14.0",
+    "ts-node":      "^10.9.2",
+    "typescript":   "^5.4.5",
+    "@types/node":  "^20.14.0"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}

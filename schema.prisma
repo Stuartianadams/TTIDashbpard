@@ -1,0 +1,384 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// TTI Dashboard — Prisma Schema
+// Phase 1 of the deployment plan
+//
+// Run:  npx prisma migrate dev --name init
+// Seed: npx ts-node prisma/seed.ts
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DeploymentType {
+  Hosted
+  OnPremise
+}
+
+enum BackupStrategy {
+  AAG
+  Replication
+}
+
+enum RoadmapStatus {
+  planned
+  in_progress
+  delivered
+  cancelled
+}
+
+enum RoadmapCategory {
+  Product_Software   // "Product - Software"
+  Product_Hardware   // "Product - Hardware"
+  Product_Data       // "Product - Data"
+  Engineering
+  Innovation
+}
+
+enum FiscalYear {
+  FY26
+  FY27
+  FY28
+  FY29
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM MODULES
+// The 12 core modules that can be enabled per deployment.
+// This is reference data — seeded once, rarely changed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Module {
+  id          String   @id @default(cuid())
+  key         String   @unique         // e.g. "arc", "service_manager"
+  label       String                   // e.g. "ARC", "Service Manager"
+  color       String                   // hex, e.g. "#4f8ef7"
+  sortOrder   Int      @default(0)
+
+  // Relations
+  deploymentModules  DeploymentModule[]
+  roadmapFeatures    RoadmapFeature[]
+  releaseComponents  ReleaseComponent[]
+  valueStreamModules ValueStreamModule[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGIONS
+// Top-level geographic/operational region (UK, Spain, Sweden, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Region {
+  id           String   @id @default(cuid())
+  code         String   @unique   // e.g. "uk", "es", "se"
+  name         String             // e.g. "United Kingdom"
+  flag         String             // emoji, e.g. "🇬🇧"
+  color        String             // hex brand colour for this region
+  totalUsers   Int      @default(0)
+
+  // Relations
+  deployments     Deployment[]
+  regionalModules RegionalModule[]
+  roadmapRegions  RoadmapFeatureRegion[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("regions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEPLOYMENTS
+// An individual platform instance within a region
+// (e.g. "SAAS3", "Cruz Roja Espana", "TSP-SE-PROD-01")
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Deployment {
+  id           String         @id @default(cuid())
+  regionId     String
+  region       Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  instance     String                   // e.g. "SAAS3", "Centel"
+  type         DeploymentType           // Hosted | OnPremise
+  version      String                   // e.g. "1.5", "2.4"
+  users        Int            @default(0)
+  backup       BackupStrategy
+  cti          Int            @default(0)   // number of CTI servers
+
+  // Per-module user counts — normalised into a join table
+  modules      DeploymentModule[]
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([regionId, instance])
+  @@map("deployments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEPLOYMENT MODULES
+// How many users of a given module are active on a given deployment.
+// Replaces the flat modules:{} object in the current JS data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DeploymentModule {
+  id           String     @id @default(cuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  moduleId     String
+  module       Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  userCount    Int        @default(0)
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([deploymentId, moduleId])
+  @@map("deployment_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGIONAL MODULES
+// Bespoke apps specific to a region (Sigma, EVA, AVA, Utförarapp, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RegionalModule {
+  id          String   @id @default(cuid())
+  regionId    String
+  region      Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  name        String           // e.g. "Sigma", "Utförarapp"
+  description String           // e.g. "Spain-specific telecare management platform"
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("regional_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROADMAP FEATURES
+// Items on the product roadmap, grouped by fiscal year and category.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RoadmapFeature {
+  id          String          @id @default(cuid())
+  name        String
+  description String          @db.Text
+  category    RoadmapCategory
+  moduleId    String?
+  module      Module?         @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  fiscalYear  FiscalYear
+  status      RoadmapStatus   @default(planned)
+  userImpact  Int?            // optional: estimated users affected
+
+  // Many-to-many with regions via explicit join table
+  regions     RoadmapFeatureRegion[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("roadmap_features")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROADMAP FEATURE → REGION (join table)
+// Explicit join so we can add per-region metadata later (e.g. priority, notes)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RoadmapFeatureRegion {
+  id        String         @id @default(cuid())
+  featureId String
+  feature   RoadmapFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  regionId  String
+  region    Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  notes     String?        // optional region-specific notes
+
+  @@unique([featureId, regionId])
+  @@map("roadmap_feature_regions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM VERSIONS
+// Known release versions of the TSP platform.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PlatformVersion {
+  id          String   @id @default(cuid())
+  version     String   @unique   // e.g. "1.5", "2.4"
+  releasedAt  DateTime?
+  notes       String?  @db.Text
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("platform_versions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASES
+// Staircase chart data — each named release with a cumulative feature count
+// and a breakdown of features added per module/area.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Release {
+  id              String             @id @default(cuid())
+  label           String   @unique   // e.g. "v1.6", "v2.5"
+  sortOrder       Int      @default(0)
+  isBaseline      Boolean  @default(false)
+  baselineCount   Int?               // only set when isBaseline = true
+  releasedAt      DateTime?
+  notes           String?  @db.Text
+
+  components      ReleaseComponent[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("releases")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASE COMPONENTS
+// Breakdown of features added in a release, by module/area.
+// Maps to the modules:{} object on each step in the current JS staircase data.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ReleaseComponent {
+  id          String   @id @default(cuid())
+  releaseId   String
+  release     Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  // For items like "Engineering", "Data", "PNC" that don't map to a Module row
+  // use areaLabel instead of a moduleId
+  areaLabel   String?  // e.g. "Engineering", "PNC", "Data"
+  count       Int      @default(0)
+
+  @@unique([releaseId, moduleId])
+  @@map("release_components")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM STAGES
+// The customer value stream stages (Assessment, Referral, etc.)
+// Reference data — seeded once.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamStage {
+  id          String   @id @default(cuid())
+  key         String   @unique   // e.g. "assessment", "reactive_care"
+  label       String             // e.g. "Assessment", "Reactive Care Monitoring"
+  color       String             // hex chevron fill
+  textColor   String   @default("#ffffff")
+  sortOrder   Int      @default(0)
+  isRoadmap   Boolean  @default(false)
+
+  // Relations
+  modules       ValueStreamModule[]
+  functionality ValueStreamFunctionality[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("value_stream_stages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM MODULES
+// Which platform modules appear in which stages of the value stream,
+// and whether they span multiple stages.
+// Maps to the module coverage rows in the "Module Coverage" card.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamModule {
+  id            String           @id @default(cuid())
+  moduleId      String
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  stageStartId  String
+  stageStart    ValueStreamStage @relation(fields: [stageStartId], references: [id], onDelete: Cascade)
+  stageEndId    String           // same as stageStartId for single-column spans
+  rowOrder      Int    @default(0)
+  isRoadmap     Boolean @default(false)
+  segmentIndex  Int    @default(0)  // 0 = first segment, 1 = second (for split rows like TSP Portal)
+
+  @@map("value_stream_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM FUNCTIONALITY
+// The detailed function items within each stage (the Customer Value Stream
+// Detail card). Each row is a capability displayed under a stage column.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamFunctionality {
+  id          String           @id @default(cuid())
+  stageId     String
+  stage       ValueStreamStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  label       String           // e.g. "Design Forms", "Manage Inventory"
+  colorClass  String           // "green" | "red" | "yellow" | "blue" | "pink"
+  sortOrder   Int    @default(0)
+  notes       String? @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("value_stream_functionality")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXTERNAL SYSTEMS
+// Entries in the "External Systems" column of the architecture view
+// (WFM, third-party partners, etc.)
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExternalSystem {
+  id          String   @id @default(cuid())
+  name        String   @unique   // e.g. "WFM"
+  description String             // e.g. "Workforce Management"
+  color       String   @default("#9b7af5")
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("external_systems")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// Lightweight change log — who changed what and when.
+// Useful for the "Work in Progress" banner and for tracking data freshness.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  entity      String             // e.g. "Region", "Deployment", "RoadmapFeature"
+  entityId    String
+  action      String             // "CREATE" | "UPDATE" | "DELETE"
+  changedBy   String             // user id or name from auth provider
+  diff        Json?              // optional: before/after snapshot
+  createdAt   DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
