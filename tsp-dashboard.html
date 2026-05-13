@@ -1,0 +1,3152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TTI Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;600;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg: #0d0f14;
+  --bg2: #141720;
+  --bg3: #1b1f2b;
+  --bg4: #222636;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.13);
+  --text: #f2f4fa;
+  --text2: #b8c0d8;
+  --text3: #9aa0b8;
+  --accent: #4f8ef7;
+  --accent2: #7b5ef8;
+  --teal: #2ec4a0;
+  --amber: #f5a623;
+  --coral: #f06060;
+  --green: #5bbf72;
+  --purple: #9b7af5;
+  --pink: #f06fa0;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+  --r: 10px;
+  --r2: 16px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+/* Layout */
+.shell { display: flex; height: 100vh; overflow: hidden; }
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow-y: auto;
+}
+
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.sidebar-logo h1 {
+  font-family: var(--font-head);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--accent);
+}
+.sidebar-logo p { font-size: 11px; color: var(--text3); margin-top: 2px; font-family: var(--font-mono); }
+
+.nav-section { padding: 12px 10px 4px; }
+.nav-label { font-size: 10px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text3); padding: 0 8px 6px; font-family: var(--font-mono); }
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text2);
+  transition: all 0.15s;
+  border: 1px solid transparent;
+}
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: rgba(79,142,247,0.12); color: var(--accent); border-color: rgba(79,142,247,0.25); }
+.nav-item .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.nav-item .flag { font-size: 16px; line-height: 1; }
+
+.main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+
+.topbar {
+  background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.topbar h2 { font-family: var(--font-head); font-size: 17px; font-weight: 600; }
+.topbar-actions { display: flex; gap: 10px; }
+
+.btn {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn:hover { background: var(--bg3); }
+.btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 500;
+}
+.btn.primary:hover { background: #3a7ae8; }
+.btn.sm { padding: 5px 12px; font-size: 12px; }
+
+.content { padding: 24px 28px; flex: 1; }
+
+/* Cards */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--r2);
+  padding: 20px;
+}
+
+.card-title {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text2);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+/* Grid */
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+/* Stat cards */
+.stat-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 16px;
+}
+.stat-label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+.stat-value { font-size: 26px; font-weight: 500; font-family: var(--font-head); }
+.stat-sub { font-size: 12px; color: var(--text3); margin-top: 3px; }
+
+/* Region form */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group label { font-size: 12px; color: var(--text2); font-family: var(--font-mono); }
+.form-group input, .form-group select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+.form-group input[type="number"] { font-family: var(--font-mono); }
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.module-input {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+}
+.module-input label { font-size: 11px; color: var(--text3); font-family: var(--font-mono); display: block; margin-bottom: 4px; }
+.module-input input {
+  width: 100%;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  border-radius: 6px;
+  padding: 5px 8px;
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  outline: none;
+}
+.module-input input:focus { border-color: var(--accent); }
+
+/* Deployment list */
+.deployment-item {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.dep-index {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  min-width: 20px;
+  padding-top: 2px;
+}
+.dep-info { flex: 1; }
+.dep-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 4px; }
+.badge {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+}
+.badge.hosted { border-color: rgba(79,142,247,0.4); color: var(--accent); }
+.badge.onprem { border-color: rgba(246,166,35,0.4); color: var(--amber); }
+.badge.version { border-color: rgba(46,196,160,0.4); color: var(--teal); }
+
+.dep-remove { color: var(--text3); cursor: pointer; font-size: 16px; line-height: 1; padding: 2px 4px; transition: color 0.15s; }
+.dep-remove:hover { color: var(--coral); }
+.vsd-cell { vertical-align:top; padding:4px; border:1px solid rgba(255,255,255,0.07); background:rgba(255,255,255,0.01); }
+.vsd-item { font-family:'DM Mono',monospace; font-size:9.5px; font-weight:500; color:#f2f4fa; background:#2a3a28; border-radius:4px; padding:5px 6px; margin-bottom:3px; text-align:center; line-height:1.35; }
+.vsd-item.blue { background:#1a2d4a; border-left:3px solid #4f8ef7; }
+.vsd-item.yellow { background:#2a2000; border-left:3px solid #f5c842; color:#f5c842; }
+.vsd-item.pink { background:#2a1020; border-left:3px solid #e879a0; color:#e879a0; }
+.vsd-item.red { background:#3a0a0a; border-left:3px solid #e05050; color:#f08080; }
+.vsd-item.green { background:#1a2d1a; border-left:3px solid #4caf6a; }
+
+/* Module bars */
+.module-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.module-bar-label {
+  font-size: 12px;
+  font-family: var(--font-mono);
+  color: var(--text2);
+  min-width: 130px;
+}
+.module-bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--bg4);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+.module-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+.module-bar-val {
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text3);
+  min-width: 55px;
+  text-align: right;
+}
+
+/* World map visual */
+.world-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.country-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.country-card:hover { border-color: var(--border2); background: var(--bg4); }
+.country-card.selected { border-color: rgba(79,142,247,0.5); background: rgba(79,142,247,0.06); }
+.country-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+}
+.country-card .flag { font-size: 22px; margin-bottom: 6px; }
+.country-card .name { font-family: var(--font-head); font-size: 13px; font-weight: 600; }
+.country-card .users { font-family: var(--font-mono); font-size: 11px; color: var(--text3); margin-top: 2px; }
+.country-card .dep-count { font-size: 11px; color: var(--text2); margin-top: 6px; }
+
+/* Bubble chart area */
+.bubble-area {
+  position: relative;
+  height: 260px;
+  background: var(--bg3);
+  border-radius: var(--r);
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+
+/* Version badge */
+.ver-chip {
+  display: inline-block;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--bg4);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  margin: 2px;
+}
+
+/* Tab system */
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab {
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--text3);
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s;
+  font-family: var(--font-body);
+}
+.tab:hover { color: var(--text2); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.view { display: none; }
+.view.active { display: block; }
+
+/* Alert */
+.info-box {
+  background: rgba(79,142,247,0.07);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: var(--r);
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 14px;
+}
+
+/* Divider */
+.divider { height: 1px; background: var(--border); margin: 18px 0; }
+
+/* CTI indicator */
+.cti-dots { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.cti-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--teal);
+  opacity: 0.8;
+}
+
+/* Backup badge */
+.backup-aag { color: var(--purple); border-color: rgba(155,122,245,0.4); }
+.backup-rep { color: var(--green); border-color: rgba(91,191,114,0.4); }
+
+/* Responsive table */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.data-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text2);
+  font-family: var(--font-mono);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: var(--bg3); }
+
+/* Scroll */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg4); border-radius: 3px; }
+
+/* Section header */
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.section-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Chart.js canvas fix */
+.chart-wrap { position: relative; width: 100%; }
+
+/* Color accents per country */
+[data-region="uk"]::before { background: var(--accent); }
+[data-region="es"]::before { background: var(--coral); }
+[data-region="se"]::before { background: var(--teal); }
+[data-region="dk"]::before { background: var(--amber); }
+[data-region="fr"]::before { background: var(--purple); }
+[data-region="de"]::before { background: var(--green); }
+[data-region="nl"]::before { background: var(--pink); }
+[data-region="au"]::before { background: #5bc4ef; }
+
+.region-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; display: inline-block; }
+
+/* Regional Modules */
+.regional-module-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  border-left: 3px solid #e879a0;
+  margin-bottom: 8px;
+}
+.regional-module-item .rm-info { flex: 1; min-width: 0; }
+.regional-module-item .rm-name { font-family: var(--font-head); font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.regional-module-item .rm-desc { font-size: 11px; color: var(--text3); line-height: 1.5; }
+.regional-module-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(232,121,160,0.1);
+  border: 1px solid rgba(232,121,160,0.3);
+  color: #e879a0;
+  display: inline-block;
+}
+
+/* Roadmap */
+.fy-btn {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.fy-btn.active { background: rgba(79,142,247,0.15); border-color: rgba(79,142,247,0.4); color: var(--accent); }
+.fy-btn:hover { color: var(--text2); }
+
+.region-filter-btn {
+  padding: 3px 10px;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  background: transparent;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.region-filter-btn.active { opacity: 1; border-color: var(--border2); color: var(--text2); background: var(--bg3); }
+.region-filter-btn:not(.active) { opacity: 0.45; }
+
+.fy-column { flex: 1; min-width: 0; }
+.fy-column-header {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  padding: 10px 14px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.fy-column-body {
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  min-height: 120px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.feature-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 11px 13px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  border-left: 3px solid transparent;
+}
+.feature-card:hover { background: var(--bg3); border-color: var(--border2); }
+.feature-card .feat-name {
+  font-family: var(--font-head);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 5px;
+}
+.feature-card .feat-module-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  border: 1px solid;
+  display: inline-block;
+  margin-bottom: 6px;
+}
+.feature-card .feat-regions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+.feat-region-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: var(--bg4);
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+.feat-desc-text { font-size: 11px; color: var(--text3); line-height: 1.5; margin-top: 4px; }
+.status-dot {
+  width: 7px; height: 7px; border-radius: 50%; display: inline-block; flex-shrink: 0;
+}
+.status-planned { background: var(--text3); }
+.status-in_progress { background: var(--amber); }
+.status-complete { background: var(--teal); }
+
+.region-check-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text2);
+  transition: all 0.12s;
+  user-select: none;
+}
+.region-check-item.checked { border-color: rgba(79,142,247,0.4); background: rgba(79,142,247,0.08); color: var(--text); }
+
+.users-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border);
+}
+.users-summary-bar .ubar-track {
+  flex: 1; height: 4px; background: var(--bg4); border-radius: 2px; overflow: hidden;
+}
+.users-summary-bar .ubar-fill { height: 100%; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h1>TTI DASHBOARD</h1>
+      <p>Global Operations View</p>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Views</div>
+      <div class="nav-item active" onclick="switchView('global')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 1c-2.5 2-4 4.5-4 7s1.5 5 4 7"/><path d="M8 1c2.5 2 4 4.5 4 7s-1.5 5-4 7"/><path d="M1 8h14"/></svg>
+        Global Overview
+      </div>
+      <div class="nav-item" onclick="switchView('modules')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+        Module Analysis
+      </div>
+      <div class="nav-item" onclick="switchView('versions')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+        Version Matrix
+      </div>
+      <div class="nav-item" onclick="switchView('marketecture')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M5 3v10M11 3v10M1 8h14"/></svg>
+        Platform Marketecture
+      </div>
+      <div class="nav-item" onclick="switchView('roadmap')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 4h14M1 8h10M1 12h7"/><circle cx="13" cy="12" r="2"/></svg>
+        Roadmap
+      </div>
+      <div class="nav-item" onclick="switchView('releases')">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 14V6l6-4 6 4v8"/><path d="M6 14v-4h4v4"/><path d="M2 6h12"/></svg>
+        Releases
+      </div>
+    </div>
+
+    <div class="nav-section" style="border-top: 1px solid var(--border); margin-top: 8px; padding-top: 16px;">
+      <div class="nav-label">Regions</div>
+      <div id="region-nav"></div>
+    </div>
+
+    <div style="margin-top: auto; padding: 14px; border-top: 1px solid var(--border);">
+      <div style="font-size:10px;font-family:var(--font-mono);color:#f5c842;background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.25);border-radius:5px;padding:5px 8px;margin-bottom:10px;line-height:1.4;">⚠ Work in Progress</div>
+      <div style="font-size: 11px; color: var(--text3); font-family: var(--font-mono); line-height: 1.6;">
+        <div>Total regions: <span id="nav-total-regions" style="color:var(--text2)">0</span></div>
+        <div>Total deployments: <span id="nav-total-deps" style="color:var(--text2)">0</span></div>
+        <div>Total service users: <span id="nav-total-users" style="color:var(--text2)">0</span></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h2 id="view-title">Global Overview</h2>
+        <div style="font-size:12px;color:var(--text3);font-family:var(--font-mono);margin-top:2px;" id="view-sub">Tunstall Services Platform — Infrastructure Dashboard</div>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn" onclick="downloadTemplate()">Template JSON</button>
+        <button class="btn" onclick="document.getElementById('import-file-input').click()">Import JSON</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" onchange="importData(this)">
+        <button class="btn" onclick="exportData()">Export JSON</button>
+        <button class="btn primary" onclick="openAddRegion()">+ Add Region</button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- GLOBAL VIEW -->
+      <div id="view-global" class="view active">
+        <div class="grid-4" id="global-stats"></div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Service Users by Region</div>
+            <div class="chart-wrap" style="height:240px"><canvas id="chart-users"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Module Adoption (Global)</div>
+            <div id="module-bars"></div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="section-header">
+            <div class="card-title" style="margin-bottom:0">Region Cards</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">Click to edit region</div>
+          </div>
+          <div class="world-grid" id="country-grid"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Deployment Summary</div>
+          <table class="data-table" id="deploy-table">
+            <thead>
+              <tr>
+                <th>Instance</th>
+                <th>Region</th>
+                <th>Type</th>
+                <th>Version</th>
+                <th>Service Users</th>
+                <th>Backup</th>
+                <th>CTI Servers</th>
+              </tr>
+            </thead>
+            <tbody id="deploy-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- MODULE ANALYSIS VIEW -->
+      <div id="view-modules" class="view">
+        <div class="info-box">Module adoption shows service users per module vs. total regional users. Bubble size represents absolute user count.</div>
+
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-title">Module Adoption — Comparative Bubble Chart</div>
+          <div class="chart-wrap" style="height:360px"><canvas id="chart-bubble"></canvas></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Module Coverage by Region (%)</div>
+            <div class="chart-wrap" style="height:280px"><canvas id="chart-heatmap"></canvas></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Global Module Totals</div>
+            <div id="module-totals-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- VERSION MATRIX VIEW -->
+      <div id="view-versions" class="view">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-title">Platform Version Distribution</div>
+          <div class="chart-wrap" style="height:260px"><canvas id="chart-versions"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-title">Version × Region Matrix</div>
+          <div id="version-matrix"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Backup Method Distribution</div>
+          <div class="chart-wrap" style="height:200px"><canvas id="chart-backup"></canvas></div>
+        </div>
+      </div>
+
+      <!-- REGION EDIT VIEW -->
+      <div id="view-region" class="view">
+        <div style="margin-bottom:18px;">
+          <button class="btn sm" onclick="switchView('global')">← Back to Global</button>
+        </div>
+        <div id="region-editor"></div>
+      </div>
+
+      <!-- PLATFORM MARKETECTURE VIEW -->
+      <div id="view-marketecture" class="view">
+
+        <!-- VALUE STREAM DIAGRAM -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:10px">
+            <div class="card-title" style="margin-bottom:0">Customer Value Stream</div>
+            <div style="display:flex;gap:12px;align-items:center;font-size:11px;font-family:var(--font-mono);color:var(--text3)">
+              <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#4f8ef7"></span>Onboarding &amp; Management</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#c07800"></span>Care &amp; Response</span>
+              <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#e879a0"></span>Proactive</span>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+          <svg width="100%" viewBox="0 0 1260 82" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:900px">
+            <defs>
+              <style>
+                .vs-label { font-family:'Syne',sans-serif; font-size:10.5px; font-weight:600; fill:#fff; text-anchor:middle; dominant-baseline:central; }
+                .vs-label-sm { font-family:'Syne',sans-serif; font-size:9.5px; font-weight:600; fill:#fff; text-anchor:middle; dominant-baseline:central; }
+              </style>
+              <marker id="vs-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="#e879a0" stroke-width="1.8" stroke-linecap="round"/>
+              </marker>
+            </defs>
+
+            <!-- All chevrons: y=10, h=42, tip=14, gap=2
+                 1. Social Care Referrals:    10 → 122   (flat left)
+                 2. Assessment:              138 → 230
+                 3. Referral:                246 → 324
+                 4. Prescription:            340 → 426
+                 5. Installation:            442 → 542
+                 6. Proactive Programmes:    558 → 654   (pink)  ← moved inline
+                 7. Reactive Care:           670 → 766   (yellow)
+                 8. Responder Services:      782 → 868   (yellow)
+                 9. Assessment Review:       884 → 976
+                10. Equipment Maintenance:   992 → 1088
+                11. Decommission:           1104 → 1192  (flat right)
+            -->
+
+            <!-- 1. Social Care Referrals — dark slate -->
+            <polygon points="10,10 122,10 136,31 122,52 10,52" fill="#2d3a4a"/>
+            <text class="vs-label-sm" x="73"  y="28">Social Care</text>
+            <text class="vs-label-sm" x="73"  y="41">Referrals</text>
+
+            <!-- 2. Assessment — blue -->
+            <polygon points="138,10 230,10 244,31 230,52 138,52 152,31" fill="#4f8ef7"/>
+            <text class="vs-label" x="191" y="31">Assessment</text>
+
+            <!-- 3. Referral — blue -->
+            <polygon points="246,10 324,10 338,31 324,52 246,52 260,31" fill="#4f8ef7"/>
+            <text class="vs-label" x="292" y="31">Referral</text>
+
+            <!-- 4. Prescription — blue -->
+            <polygon points="340,10 426,10 440,31 426,52 340,52 354,31" fill="#4f8ef7"/>
+            <text class="vs-label" x="390" y="31">Prescription</text>
+
+            <!-- 5. Installation & Asset Management — blue -->
+            <polygon points="442,10 542,10 556,31 542,52 442,52 456,31" fill="#4f8ef7"/>
+            <text class="vs-label-sm" x="499" y="24">Installation &amp;</text>
+            <text class="vs-label-sm" x="499" y="36">Asset</text>
+            <text class="vs-label-sm" x="499" y="47">Management</text>
+
+            <!-- 6. Proactive Programmes — pink (now inline) -->
+            <polygon points="558,10 654,10 668,31 654,52 558,52 572,31" fill="#e879a0"/>
+            <text class="vs-label-sm" x="613" y="25">Proactive</text>
+            <text class="vs-label-sm" x="613" y="38">Programmes</text>
+
+            <!-- Dashed arrow from bottom of Proactive Programmes, drops below row, runs to Responder Services -->
+            <path d="M654,52 L654,68 L868,68 L868,52" fill="none" stroke="#e879a0" stroke-width="1.4" stroke-dasharray="4 3" marker-end="url(#vs-arr)" opacity="0.8"/>
+
+            <!-- 7. Reactive Care Monitoring — yellow -->
+            <polygon points="670,10 766,10 780,31 766,52 670,52 684,31" fill="#c07800"/>
+            <text class="vs-label-sm" x="725" y="25">Reactive Care</text>
+            <text class="vs-label-sm" x="725" y="38">Monitoring</text>
+
+            <!-- 8. Responder Services — yellow -->
+            <polygon points="782,10 868,10 882,31 868,52 782,52 796,31" fill="#c07800"/>
+            <text class="vs-label-sm" x="832" y="25">Responder</text>
+            <text class="vs-label-sm" x="832" y="38">Services</text>
+
+            <!-- 9. Assessment Review — blue -->
+            <polygon points="884,10 976,10 990,31 976,52 884,52 898,31" fill="#4f8ef7"/>
+            <text class="vs-label-sm" x="937" y="25">Assessment</text>
+            <text class="vs-label-sm" x="937" y="38">Review</text>
+
+            <!-- 10. Equipment Maintenance — blue -->
+            <polygon points="992,10 1088,10 1102,31 1088,52 992,52 1006,31" fill="#4f8ef7"/>
+            <text class="vs-label-sm" x="1047" y="25">Equipment</text>
+            <text class="vs-label-sm" x="1047" y="38">Maintenance</text>
+
+            <!-- 11. Decommission — blue (flat right) -->
+            <polygon points="1104,10 1210,10 1210,52 1104,52 1118,31" fill="#4f8ef7"/>
+            <text class="vs-label" x="1157" y="31">Decommission</text>
+
+          </svg>
+          </div>
+        </div>
+
+        <!-- VALUE STREAM MODULE MAPPING -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:10px;cursor:pointer" onclick="toggleCollapse('vsm-body', 'vsm-chevron')">
+            <div class="card-title" style="margin-bottom:0">Module Coverage across Value Stream</div>
+            <div style="display:flex;gap:16px;align-items:center">
+              <div style="display:flex;gap:16px;align-items:center;font-size:11px;font-family:var(--font-mono);color:var(--text3)">
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:4px;border-radius:1px;border:1.5px dashed #e879a0"></span>Roadmap</span>
+              </div>
+              <svg id="vsm-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;transition:transform 0.2s"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+          </div>
+          <div id="vsm-body">
+          <div style="overflow-x:auto">
+          <svg width="100%" viewBox="0 0 1260 420" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:900px">
+            <style>
+              .vsm-label   { font-family:'Syne',sans-serif; font-size:11px; font-weight:600; fill:#f2f4fa; text-anchor:middle; dominant-baseline:central; }
+              .vsm-lbl-sm  { font-family:'Syne',sans-serif; font-size:9.5px; font-weight:600; fill:#f2f4fa; text-anchor:middle; dominant-baseline:central; }
+              .vsm-row-hdr { font-family:'DM Mono',monospace; font-size:8.5px; fill:#7a8299; text-anchor:middle; dominant-baseline:central; }
+            </style>
+            <!-- COLUMN BOUNDARIES matching updated value stream chevrons:
+              Social Care:        10-122   ctr 66
+              Assessment:        138-230   ctr 184
+              Referral:          246-324   ctr 285
+              Prescription:      340-426   ctr 383
+              Installation:      442-542   ctr 492
+              Proactive Progs:   558-654   ctr 606
+              Reactive Care:     670-766   ctr 718
+              Responder:         782-868   ctr 825
+              Assessment Review: 884-976   ctr 930
+              Equipment:         992-1088  ctr 1040
+              Decommission:     1104-1210  ctr 1157
+            -->
+            <!-- Column tints -->
+            <rect x="10"   y="0" width="112" height="420" fill="rgba(255,255,255,0.012)"/>
+            <rect x="138"  y="0" width="92"  height="420" fill="rgba(79,142,247,0.04)"/>
+            <rect x="246"  y="0" width="78"  height="420" fill="rgba(255,255,255,0.012)"/>
+            <rect x="340"  y="0" width="86"  height="420" fill="rgba(79,142,247,0.04)"/>
+            <rect x="442"  y="0" width="100" height="420" fill="rgba(255,255,255,0.012)"/>
+            <rect x="558"  y="0" width="96"  height="420" fill="rgba(232,121,160,0.06)"/>
+            <rect x="670"  y="0" width="96"  height="420" fill="rgba(245,200,66,0.05)"/>
+            <rect x="782"  y="0" width="86"  height="420" fill="rgba(245,200,66,0.05)"/>
+            <rect x="884"  y="0" width="92"  height="420" fill="rgba(79,142,247,0.04)"/>
+            <rect x="992"  y="0" width="96"  height="420" fill="rgba(255,255,255,0.012)"/>
+            <rect x="1104" y="0" width="106" height="420" fill="rgba(79,142,247,0.04)"/>
+            <!-- Stage header labels -->
+            <text class="vsm-row-hdr" x="66"   y="12" fill="#a0a8c0">Social Care</text>
+            <text class="vsm-row-hdr" x="184"  y="12" fill="#8aa8d8">Assessment</text>
+            <text class="vsm-row-hdr" x="285"  y="12" fill="#8aa8d8">Referral</text>
+            <text class="vsm-row-hdr" x="383"  y="12" fill="#8aa8d8">Prescription</text>
+            <text class="vsm-row-hdr" x="492"  y="12" fill="#8aa8d8">Installation</text>
+            <text class="vsm-row-hdr" x="606"  y="12" fill="#e080c0">Proactive</text>
+            <text class="vsm-row-hdr" x="718"  y="12" fill="#c07800">Reactive Care</text>
+            <text class="vsm-row-hdr" x="825"  y="12" fill="#c07800">Responder</text>
+            <text class="vsm-row-hdr" x="930"  y="12" fill="#8aa8d8">Review</text>
+            <text class="vsm-row-hdr" x="1040" y="12" fill="#8aa8d8">Equipment</text>
+            <text class="vsm-row-hdr" x="1157" y="12" fill="#8aa8d8">Decommission</text>
+            <line x1="10" y1="22" x2="1250" y2="22" stroke="rgba(255,255,255,0.07)" stroke-width="0.75"/>
+            <!-- Vertical dividers -->
+            <line x1="138"  y1="22" x2="138"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="246"  y1="22" x2="246"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="340"  y1="22" x2="340"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="442"  y1="22" x2="442"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="558"  y1="22" x2="558"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="670"  y1="22" x2="670"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="782"  y1="22" x2="782"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="884"  y1="22" x2="884"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="992"  y1="22" x2="992"  y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <line x1="1104" y1="22" x2="1104" y2="420" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <!-- ROW 1 y=26: Gateway/TSP API — Assessment→Decommission end -->
+            <rect x="140" y="26" width="1068" height="30" rx="5" fill="#2a2040" stroke="#9b7af5" stroke-width="1.3"/>
+            <rect x="140" y="26" width="1068" height="3"  rx="2" fill="#9b7af5" opacity="0.85"/>
+            <text class="vsm-label" x="714" y="42">TSP API / Service Hooks</text>
+            <!-- ROW 2 y=61: ARC — Reactive Care→Responder end -->
+            <rect x="672" y="61" width="194" height="30" rx="5" fill="#2a2000" stroke="#f5c842" stroke-width="1.3"/>
+            <rect x="672" y="61" width="194" height="3"  rx="2" fill="#f5c842" opacity="0.9"/>
+            <text class="vsm-label" x="769" y="77">ARC</text>
+            <!-- ROW 3 y=96: Service Manager — Assessment→Decommission end -->
+            <rect x="140" y="96" width="1068" height="30" rx="5" fill="#1a2d4a" stroke="#4f8ef7" stroke-width="1.3"/>
+            <rect x="140" y="96" width="1068" height="3"  rx="2" fill="#4f8ef7" opacity="0.9"/>
+            <text class="vsm-label" x="714" y="112">Service Manager</text>
+            <!-- ROW 4 y=131: Proactive Service — Proactive Programmes col only -->
+            <rect x="560" y="131" width="108" height="30" rx="5" fill="#2a1020" stroke="#e879a0" stroke-width="1.3"/>
+            <rect x="560" y="131" width="108" height="3"  rx="2" fill="#e879a0" opacity="0.9"/>
+            <text class="vsm-lbl-sm" x="614" y="147">Proactive Svc</text>
+            <!-- ROW 5 y=166: TSP Portal — Seg1: Assessment→Installation end, Seg2: Review→Equipment end -->
+            <rect x="140" y="166" width="400" height="30" rx="5" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.3"/>
+            <rect x="140" y="166" width="400" height="3"  rx="2" fill="#2ec4a0" opacity="0.9"/>
+            <text class="vsm-label" x="340" y="182">TSP Portal</text>
+            <rect x="886" y="166" width="200" height="30" rx="5" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.3"/>
+            <rect x="886" y="166" width="200" height="3"  rx="2" fill="#2ec4a0" opacity="0.9"/>
+            <text class="vsm-label" x="986" y="182">TSP Portal</text>
+            <!-- ROW 6 y=201: Bulk Importer (Referral col) + Notifications (Responder col) -->
+            <rect x="248" y="201" width="76" height="30" rx="5" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.3"/>
+            <rect x="248" y="201" width="76" height="3"  rx="2" fill="#2ec4a0" opacity="0.9"/>
+            <text class="vsm-lbl-sm" x="286" y="217">Bulk Importer</text>
+            <rect x="784" y="201" width="82" height="30" rx="5" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.3"/>
+            <rect x="784" y="201" width="82" height="3"  rx="2" fill="#2ec4a0" opacity="0.9"/>
+            <text class="vsm-lbl-sm" x="825" y="217">Notifications</text>
+            <!-- ROW 7 y=236: DMP — Seg1: Prescription→Installation end, Seg2: Review→Equipment end -->
+            <rect x="342" y="236" width="198" height="30" rx="5" fill="#231e10" stroke="#f5a623" stroke-width="1.3"/>
+            <rect x="342" y="236" width="198" height="3"  rx="2" fill="#f5a623" opacity="0.9"/>
+            <text class="vsm-label" x="441" y="252">DMP</text>
+            <rect x="886" y="236" width="200" height="30" rx="5" fill="#231e10" stroke="#f5a623" stroke-width="1.3"/>
+            <rect x="886" y="236" width="200" height="3"  rx="2" fill="#f5a623" opacity="0.9"/>
+            <text class="vsm-label" x="986" y="252">DMP</text>
+            <!-- ROW 8 y=271: F&F App roadmap — Seg1: Social Care→Installation end, Seg2: Reactive Care→Responder end -->
+            <rect x="12"  y="271" width="528" height="28" rx="5" fill="#1a0a14" stroke="#e879a0" stroke-width="1.3" stroke-dasharray="6 3"/>
+            <text class="vsm-label" x="276" y="286" fill="#e879a0">F&amp;F App  <tspan font-size="9" opacity="0.75">&#x2736; roadmap</tspan></text>
+            <rect x="672" y="271" width="194" height="28" rx="5" fill="#1a0a14" stroke="#e879a0" stroke-width="1.3" stroke-dasharray="6 3"/>
+            <text class="vsm-label" x="769" y="286" fill="#e879a0">F&amp;F App</text>
+            <!-- ROW 9 y=305: TTI-Assessment — roadmap, Assessment col + Review col -->
+            <rect x="140" y="305" width="90" height="28" rx="5" fill="#1a0a14" stroke="#e879a0" stroke-width="1.3" stroke-dasharray="6 3"/>
+            <text class="vsm-lbl-sm" x="185" y="320" fill="#e879a0">TTI-Assessment</text>
+            <rect x="886" y="305" width="88" height="28" rx="5" fill="#1a0a14" stroke="#e879a0" stroke-width="1.3" stroke-dasharray="6 3"/>
+            <text class="vsm-lbl-sm" x="930" y="320" fill="#e879a0">TTI-Assessment</text>
+            <!-- ROW 10 y=339: Data Warehouse — Assessment→Decommission end -->
+            <rect x="140" y="339" width="1068" height="30" rx="5" fill="#1a2220" stroke="#f5a623" stroke-width="1.3"/>
+            <rect x="140" y="339" width="1068" height="3"  rx="2" fill="#f5a623" opacity="0.85"/>
+            <text class="vsm-label" x="714" y="355">Data Warehouse</text>
+            <!-- ROW 11 y=374: Tunstall Data Platform — Assessment→Decommission end (ROADMAP) -->
+            <rect x="140" y="374" width="1068" height="30" rx="5" fill="#0a0f1a" stroke="#5bc4ef" stroke-width="1.3" stroke-dasharray="6 3"/>
+            <text class="vsm-label" x="714" y="390" fill="#5bc4ef">Tunstall Data Platform  <tspan font-size="9" opacity="0.75">&#x2736; roadmap</tspan></text>
+          </svg>
+          </div>
+          </div><!-- /vsm-body -->
+        </div>
+
+        <!-- CUSTOMER VALUE STREAM DETAIL -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:0;cursor:pointer" onclick="toggleCollapse('vsd-body', 'vsd-chevron')">
+            <div class="card-title" style="margin-bottom:0">Customer Value Stream Detail</div>
+            <svg id="vsd-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;transition:transform 0.2s;transform:rotate(-90deg)"><path d="M4 6l4 4 4-4"/></svg>
+          </div>
+          <div id="vsd-body" style="display:none">
+          <div style="overflow-x:auto;margin-top:14px">
+          <table style="border-collapse:separate;border-spacing:2px 0;width:100%;min-width:1000px;table-layout:fixed">
+            <colgroup>
+              <col/><col/><col/><col/><col/><col/>
+              <col/><col/><col/><col/><col/><col/>
+            </colgroup>
+            <thead>
+              <tr style="height:48px">
+                <!-- clip-path: first cell flat-left, middle cells notch-left + point-right, last cell notch-left + flat-right -->
+                <!-- flat left: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%) -->
+                <!-- middle:    polygon(14px 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%) -->  
+                <!-- flat right: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 14px 50%) wait no -->
+                <th style="background:#2d3a4a;color:#b8c0d8;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(0 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%)">Social Care<br/>Referrals</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Assessment</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Referral</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Prescription</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Installation &amp;<br/>Asset Mgmt</th>
+                <th style="background:#e879a0;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Proactive<br/>Programmes</th>
+                <th style="background:#c07800;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Reactive Care<br/>Monitoring</th>
+                <th style="background:#c07800;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Proactive Care<br/>Monitoring</th>
+                <th style="background:#c07800;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Responder<br/>Services</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Review</th>
+                <th style="background:#4f8ef7;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, calc(100% - 12px) 0, 100% 50%, calc(100% - 12px) 100%, 0 100%, 12px 50%)">Equipment<br/>Maintenance</th>
+                <th style="background:#c0392b;color:#fff;font-family:'Syne',sans-serif;font-size:9.5px;font-weight:600;text-align:center;padding:0 4px;clip-path:polygon(12px 0, 100% 0, 100% 100%, 0 100%, 12px 50%)">Decommission</th>
+              </tr>
+            </thead>
+            <tbody id="vsd-tbody">
+            </tbody>
+          </table>
+          </div>
+          </div>
+        </div>
+
+        <!-- PLATFORM ARCHITECTURE -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:6px;cursor:pointer" onclick="toggleCollapse('mkt-body', 'mkt-chevron')">
+            <div class="card-title" style="margin-bottom:0">TSP Platform — Module Architecture</div>
+            <div style="display:flex;gap:16px;align-items:center">
+              <div style="display:flex;gap:12px;align-items:center;font-size:11px;font-family:var(--font-mono);color:var(--text3)">
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#4f8ef7;opacity:0.8"></span>Mandatory</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#2ec4a0;opacity:0.8"></span>Optional</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#9b7af5;opacity:0.8"></span>Integration</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#e879a0;opacity:0.8"></span>Identity</span>
+                <span style="display:flex;align-items:center;gap:5px"><span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:#f5a623;opacity:0.8"></span>Infrastructure</span>
+              </div>
+              <svg id="mkt-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="var(--text3)" stroke-width="2" stroke-linecap="round" style="flex-shrink:0;transition:transform 0.2s"><path d="M4 6l4 4 4-4"/></svg>
+            </div>
+          </div>
+          <div id="mkt-body">
+          <!-- Region filter -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+            <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;min-width:52px">Region</span>
+            <div style="display:flex;gap:6px;flex-wrap:wrap" id="mkt-region-filters"></div>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-bottom:18px">Hover modules for descriptions. Arrows show primary data and integration flows.</div>
+
+          <div style="overflow-x:auto">
+          <svg id="mkt-svg" width="100%" viewBox="0 0 1440 616" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:1000px">
+            <defs>
+              <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </marker>
+            </defs>
+            <style>
+              .mkt-box { cursor:pointer; transition:opacity 0.15s; }
+              .mkt-box:hover { opacity:0.85; }
+              .mkt-label { font-family:'Syne',sans-serif; font-size:12px; font-weight:600; fill:#e8eaf0; }
+              .mkt-sub { font-family:'DM Mono',monospace; font-size:9.5px; fill:#a8b0c8; }
+              .mkt-section-label { font-family:'Syne',sans-serif; font-size:10px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; }
+              .flow-line { fill:none; stroke-width:1.2; marker-end:url(#arr); }
+              .flow-dashed { fill:none; stroke-width:1; stroke-dasharray:4 3; marker-end:url(#arr); }
+            </style>
+            <!-- COLUMN HEADERS -->
+            <text x="120" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0" letter-spacing="0.06em">DEVICE &amp; DATA</text>
+            <text x="630" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0" letter-spacing="0.06em">CORE PLATFORM</text>
+            <text x="1115" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0" letter-spacing="0.06em">INTEGRATION &amp; API</text>
+            <text x="1335" y="14" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0" letter-spacing="0.06em">EXTERNAL SYSTEMS</text>
+            <line x1="238" y1="24" x2="238" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="6 4"/>
+            <line x1="1000" y1="24" x2="1000" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="6 4"/>
+            <line x1="1220" y1="24" x2="1220" y2="580" stroke="rgba(255,255,255,0.04)" stroke-width="1" stroke-dasharray="6 4"/>
+            <!-- AUTHENTICATION -->
+            <rect x="10" y="22" width="1420" height="64" rx="10" fill="#1e0f1a" stroke="rgba(232,121,160,0.15)" stroke-width="1"/>
+            <text class="mkt-section-label" x="28" y="40" fill="#8a4060">Authentication layer</text>
+            <g class="mkt-box" onclick="showModuleDetail('identity')">
+              <rect x="24" y="44" width="1392" height="34" rx="8" fill="#2a1020" stroke="#e879a0" stroke-width="1.8"/>
+              <rect x="24" y="44" width="1392" height="4" rx="4" fill="#e879a0" opacity="0.9"/>
+              <text x="720" y="59" text-anchor="middle" font-family="Syne,sans-serif" font-size="13" font-weight="600" fill="#e8eaf0">Identity — Authentication &amp; SSO</text>
+              <text x="720" y="72" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Centralised user accounts · roles · permissions · single sign-on for all interfaces and external access</text>
+            </g>
+            <!-- DEVICE & DATA LEFT COLUMN -->
+            <rect x="10" y="96" width="222" height="330" rx="10" fill="#0f1219" stroke="rgba(245,166,35,0.12)" stroke-width="1"/>
+            <text class="mkt-section-label" x="28" y="114" fill="#a0a8c0">Device &amp; data</text>
+            <g class="mkt-box" onclick="showModuleDetail('dmp')">
+              <rect x="22" y="124" width="198" height="66" rx="8" fill="#231e10" stroke="#f5a623" stroke-width="1.5"/>
+              <rect x="22" y="124" width="198" height="4" rx="4" fill="#f5a623" opacity="0.9"/>
+              <text class="mkt-label" x="121" y="148" text-anchor="middle" dominant-baseline="central">DMP</text>
+              <text class="mkt-sub" x="121" y="163" text-anchor="middle">Device Management Platform</text>
+              <text class="mkt-sub" x="121" y="176" text-anchor="middle">Configures &amp; monitors devices</text>
+            </g>
+            <g class="mkt-box" onclick="showModuleDetail('devices')">
+              <rect x="22" y="204" width="198" height="68" rx="8" fill="#1e1010" stroke="rgba(240,96,96,0.55)" stroke-width="1.2"/>
+              <rect x="22" y="204" width="198" height="4" rx="4" fill="#f06060" opacity="0.8"/>
+              <text class="mkt-label" x="121" y="228" text-anchor="middle" dominant-baseline="central">Alarm Devices Digital</text>
+              <text class="mkt-sub" x="121" y="245" text-anchor="middle">Lifeline Digital · telemetry</text>
+              <text class="mkt-sub" x="121" y="258" text-anchor="middle">Raises calls → ARC</text>
+            </g>
+            <g class="mkt-box">
+              <rect x="22" y="286" width="198" height="68" rx="8" fill="#1e1210" stroke="rgba(240,150,60,0.55)" stroke-width="1.2"/>
+              <rect x="22" y="286" width="198" height="4" rx="4" fill="#f09040" opacity="0.8"/>
+              <text class="mkt-label" x="121" y="310" text-anchor="middle" dominant-baseline="central">Alarm Devices Analogue</text>
+              <text class="mkt-sub" x="121" y="327" text-anchor="middle">Raises calls via CTI → ARC</text>
+            </g>
+            <rect x="22" y="368" width="198" height="50" rx="8" fill="#1e1e10" stroke="rgba(245,166,35,0.3)" stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="121" y="388" text-anchor="middle" font-family="DM Mono,monospace" font-size="10" fill="#a8b0c8">CTI Servers</text>
+            <text x="121" y="403" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0">Per deployment · telephony</text>
+            <!-- CORE PLATFORM SERVICES — includes ARC, Wallboards, TSP Portal in top row -->
+            <rect x="248" y="96" width="742" height="330" rx="10" fill="#161a26" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+            <text class="mkt-section-label" x="268" y="114" fill="#a0a8c0">Core platform services</text>
+            <!-- Top row: ARC · Wallboards · TSP Portal -->
+            <g class="mkt-box" onclick="showModuleDetail('arc')">
+              <rect x="262" y="124" width="190" height="46" rx="8" fill="#2a2000" stroke="#f5c842" stroke-width="1.5"/>
+              <rect x="262" y="124" width="190" height="4" rx="4" fill="#f5c842" opacity="0.9"/>
+              <text class="mkt-label" x="357" y="144" text-anchor="middle" dominant-baseline="central">ARC</text>
+              <text class="mkt-sub" x="357" y="159" text-anchor="middle">Alarm Response Centre</text>
+              <text x="445" y="129" font-family="DM Mono,monospace" font-size="8" fill="#f5c842">MANDATORY</text>
+            </g>
+            <g class="mkt-box" onclick="showModuleDetail('wallboards')">
+              <rect x="464" y="124" width="148" height="46" rx="8" fill="#2a1f3a" stroke="#9b7af5" stroke-width="1.2"/>
+              <rect x="464" y="124" width="148" height="4" rx="4" fill="#9b7af5" opacity="0.9"/>
+              <text class="mkt-label" x="538" y="144" text-anchor="middle" dominant-baseline="central">Wallboards</text>
+              <text class="mkt-sub" x="538" y="159" text-anchor="middle">ARC statistics</text>
+            </g>
+            <g class="mkt-box" onclick="showModuleDetail('tsp_portal')">
+              <rect x="624" y="124" width="156" height="46" rx="8" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.2"/>
+              <rect x="624" y="124" width="156" height="4" rx="4" fill="#2ec4a0" opacity="0.9"/>
+              <text class="mkt-label" x="702" y="144" text-anchor="middle" dominant-baseline="central">TSP Portal</text>
+              <text class="mkt-sub" x="702" y="159" text-anchor="middle">Customer self-service</text>
+            </g>
+            <line x1="262" y1="182" x2="984" y2="182" stroke="rgba(255,255,255,0.05)" stroke-width="0.75"/>
+            <!-- Service Manager -->
+            <g class="mkt-box" onclick="showModuleDetail('service_manager')">
+              <rect x="262" y="192" width="300" height="174" rx="10" fill="#1a2d4a" stroke="#4f8ef7" stroke-width="2"/>
+              <rect x="262" y="192" width="300" height="5" rx="5" fill="#4f8ef7" opacity="0.9"/>
+              <text x="412" y="216" text-anchor="middle" font-family="Syne,sans-serif" font-size="13" font-weight="600" fill="#e8eaf0">Service Manager</text>
+              <text x="412" y="230" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0">MANDATORY</text>
+              <rect x="274" y="240" width="128" height="34" rx="6" fill="#0f1e35" stroke="#4f8ef7" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="338" y="253" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Stock Control</text>
+              <text x="338" y="266" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">Inventory</text>
+              <rect x="414" y="240" width="136" height="34" rx="6" fill="#0f1e35" stroke="#4f8ef7" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="482" y="253" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Incident Response</text>
+              <text x="482" y="266" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">Case management</text>
+              <rect x="274" y="284" width="128" height="34" rx="6" fill="#0f1e35" stroke="#4f8ef7" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="338" y="297" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Onboarding</text>
+              <text x="338" y="310" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">Service user intake</text>
+              <rect x="414" y="284" width="136" height="34" rx="6" fill="#0f1e35" stroke="#4f8ef7" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="482" y="297" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Contact Management</text>
+              <text x="482" y="310" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">People &amp; orgs</text>
+            </g>
+            <!-- Proactive Service -->
+            <g class="mkt-box" onclick="showModuleDetail('proactive')">
+              <rect x="576" y="192" width="150" height="70" rx="8" fill="#2a1020" stroke="#e879a0" stroke-width="1.2"/>
+              <rect x="576" y="192" width="150" height="4" rx="4" fill="#e879a0" opacity="0.9"/>
+              <text class="mkt-label" x="651" y="219" text-anchor="middle" dominant-baseline="central">Proactive Service</text>
+              <text class="mkt-sub" x="651" y="235" text-anchor="middle">Outbound campaigns</text>
+            </g>
+            <!-- Notifications -->
+            <g class="mkt-box" onclick="showModuleDetail('notifications')">
+              <rect x="576" y="274" width="150" height="68" rx="8" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.2"/>
+              <rect x="576" y="274" width="150" height="4" rx="4" fill="#2ec4a0" opacity="0.9"/>
+              <text class="mkt-label" x="651" y="301" text-anchor="middle" dominant-baseline="central">Notifications</text>
+              <text class="mkt-sub" x="651" y="317" text-anchor="middle">SMS management</text>
+            </g>
+            <!-- Bulk Importer — core platform -->
+            <g class="mkt-box" onclick="showModuleDetail('bulk_importer')">
+              <rect x="576" y="354" width="150" height="46" rx="8" fill="#1a3040" stroke="#2ec4a0" stroke-width="1.2"/>
+              <rect x="576" y="354" width="150" height="4" rx="4" fill="#2ec4a0" opacity="0.9"/>
+              <text class="mkt-label" x="651" y="374" text-anchor="middle" dominant-baseline="central">Bulk Importer</text>
+              <text class="mkt-sub" x="651" y="389" text-anchor="middle">Mass upload of data</text>
+            </g>
+            <!-- Data Warehouse -->
+            <g class="mkt-box" onclick="showModuleDetail('tdp')">
+              <rect x="740" y="192" width="236" height="174" rx="10" fill="#1a2220" stroke="#f5a623" stroke-width="1.8"/>
+              <rect x="740" y="192" width="236" height="5" rx="5" fill="#f5a623" opacity="0.9"/>
+              <text x="858" y="217" text-anchor="middle" font-family="Syne,sans-serif" font-size="12" font-weight="600" fill="#e8eaf0">Data Warehouse</text>
+              <text x="858" y="231" text-anchor="middle" font-family="DM Mono,monospace" font-size="8.5" fill="#a0a8c0">Tunstall Data Platform</text>
+              <rect x="752" y="242" width="212" height="30" rx="5" fill="#0f1a10" stroke="#f5a623" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="858" y="253" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Alarm Analytics</text>
+              <text x="858" y="265" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">Call handling stats</text>
+              <rect x="752" y="280" width="212" height="30" rx="5" fill="#0f1a10" stroke="#f5a623" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="858" y="291" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Device Health</text>
+              <text x="858" y="303" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">System monitoring</text>
+              <rect x="752" y="318" width="212" height="30" rx="5" fill="#0f1a10" stroke="#f5a623" stroke-width="0.8" stroke-dasharray="3 2"/>
+              <text x="858" y="329" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">Reporting &amp; BI</text>
+              <text x="858" y="341" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">Cross-region insights</text>
+            </g>
+            <!-- INTEGRATION & API -->
+            <rect x="1010" y="96" width="200" height="476" rx="10" fill="#12161f" stroke="rgba(155,122,245,0.12)" stroke-width="1"/>
+            <text class="mkt-section-label" x="1030" y="114" fill="#a0a8c0">Integration &amp; API</text>
+            <g class="mkt-box" onclick="showModuleDetail('service_hooks')">
+              <rect x="1024" y="124" width="180" height="46" rx="8" fill="#2a2040" stroke="#9b7af5" stroke-width="1.2"/>
+              <rect x="1024" y="124" width="180" height="4" rx="4" fill="#9b7af5" opacity="0.9"/>
+              <text class="mkt-label" x="1114" y="144" text-anchor="middle" dominant-baseline="central">Service Hooks</text>
+              <text class="mkt-sub" x="1114" y="159" text-anchor="middle">Events → endpoints</text>
+            </g>
+            <g class="mkt-box" onclick="showModuleDetail('ies')">
+              <rect x="1024" y="182" width="180" height="46" rx="8" fill="#261f3a" stroke="#9b7af5" stroke-width="2"/>
+              <rect x="1024" y="182" width="180" height="5" rx="5" fill="#9b7af5" opacity="0.9"/>
+              <text x="1114" y="202" text-anchor="middle" font-family="Syne,sans-serif" font-size="12" font-weight="600" fill="#e8eaf0">Gateway</text>
+              <text x="1114" y="217" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a8b0c8">SM API · Auth · Routing</text>
+            </g>
+            <!-- EXTERNAL SYSTEMS + REGIONAL MODULES -->
+            <rect x="1228" y="96" width="202" height="476" rx="10" fill="#16121a" stroke="rgba(232,121,160,0.1)" stroke-width="1"/>
+            <text class="mkt-section-label" x="1248" y="114" fill="#a0a8c0">External systems</text>
+
+            <!-- Third-party -->
+            <rect x="1242" y="124" width="176" height="40" rx="8" fill="#1a1a22" stroke="rgba(255,255,255,0.08)" stroke-width="1" stroke-dasharray="5 3"/>
+            <text x="1330" y="140" text-anchor="middle" font-family="DM Mono,monospace" font-size="10" fill="#7a8299">Third-party</text>
+            <text x="1330" y="154" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0">Partner platforms</text>
+
+            <!-- WFM -->
+            <g class="mkt-box">
+              <rect x="1242" y="172" width="176" height="46" rx="8" fill="#1a1a2a" stroke="rgba(155,122,245,0.4)" stroke-width="1.2"/>
+              <rect x="1242" y="172" width="176" height="4" rx="4" fill="#9b7af5" opacity="0.8"/>
+              <text x="1330" y="193" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#f2f4fa">WFM</text>
+              <text x="1330" y="208" text-anchor="middle" font-family="DM Mono,monospace" font-size="8.5" fill="#7a8299">Workforce Management</text>
+            </g>
+
+            <text x="1330" y="234" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#8a4060" letter-spacing="0.06em">REGIONAL MODULES</text>
+            <line x1="1242" y1="240" x2="1418" y2="240" stroke="rgba(232,121,160,0.2)" stroke-width="0.75"/>
+            <g id="mkt-regional-mods"></g>
+            <!-- TUNSTALL DATA PLATFORM BOTTOM LANE -->
+            <rect x="10" y="440" width="982" height="148" rx="10" fill="#0d1520" stroke="rgba(91,196,239,0.15)" stroke-width="1"/>
+            <text class="mkt-section-label" x="28" y="458" fill="#90c8e0">Tunstall Data Platform</text>
+            <!-- TDP infrastructure box — contains sub-services -->
+            <g class="mkt-box" onclick="showModuleDetail('tdp')">
+              <rect x="24" y="464" width="956" height="116" rx="10" fill="#0f1e2a" stroke="#5bc4ef" stroke-width="2"/>
+              <rect x="24" y="464" width="956" height="5" rx="5" fill="#5bc4ef" opacity="0.9"/>
+              <text x="90" y="483" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#e8eaf0">Tunstall Data Platform</text>
+              <text x="90" y="496" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0ccd8">Aggregation layer</text>
+              <!-- Sim Service sub-box -->
+              <rect x="200" y="474" width="230" height="96" rx="7" fill="#0a1520" stroke="#5bc4ef" stroke-width="1" stroke-dasharray="3 2"/>
+              <rect x="200" y="474" width="230" height="3" rx="3" fill="#5bc4ef" opacity="0.6"/>
+              <text x="315" y="500" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#e8eaf0">Sim Service</text>
+              <text x="315" y="515" text-anchor="middle" font-family="DM Mono,monospace" font-size="8.5" fill="#7a8299">Simulation &amp; modelling</text>
+              <text x="315" y="528" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">for device data</text>
+              <!-- Activity Monitoring sub-box -->
+              <rect x="444" y="474" width="260" height="96" rx="7" fill="#0a1520" stroke="#5bc4ef" stroke-width="1" stroke-dasharray="3 2"/>
+              <rect x="444" y="474" width="260" height="3" rx="3" fill="#5bc4ef" opacity="0.6"/>
+              <text x="574" y="500" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#e8eaf0">Activity Monitoring</text>
+              <text x="574" y="515" text-anchor="middle" font-family="DM Mono,monospace" font-size="8.5" fill="#7a8299">Service user behaviour</text>
+              <text x="574" y="528" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">patterns &amp; anomaly detection</text>
+              <!-- Alarm Statistics sub-box -->
+              <rect x="718" y="474" width="250" height="96" rx="7" fill="#0a1520" stroke="#5bc4ef" stroke-width="1" stroke-dasharray="3 2"/>
+              <rect x="718" y="474" width="250" height="3" rx="3" fill="#5bc4ef" opacity="0.6"/>
+              <text x="843" y="500" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#e8eaf0">Alarm Statistics</text>
+              <text x="843" y="515" text-anchor="middle" font-family="DM Mono,monospace" font-size="8.5" fill="#7a8299">Call volume · response times</text>
+              <text x="843" y="528" text-anchor="middle" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">ARC performance metrics</text>
+            </g>
+            <!-- FLOW ARROWS -->
+            <!-- Identity → ARC, Wallboards, TSP Portal, External -->
+            <path class="flow-dashed" d="M357 78 L357 124" stroke="#e879a0" opacity="0.6" stroke-width="1.2" marker-end="url(#arr)"/>
+            <path class="flow-dashed" d="M538 78 L538 124" stroke="#e879a0" opacity="0.45" stroke-width="1" marker-end="url(#arr)"/>
+            <path class="flow-dashed" d="M702 78 L702 124" stroke="#e879a0" opacity="0.5" stroke-width="1" marker-end="url(#arr)"/>
+            <path class="flow-dashed" d="M1330 78 L1330 124" stroke="#e879a0" opacity="0.5" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- DMP → Alarm Devices Digital -->
+            <path class="flow-line" d="M121 190 L121 204" stroke="#f5a623" opacity="0.6" marker-end="url(#arr)"/>
+            <!-- Alarm Devices Digital → ARC -->
+            <path class="flow-line" d="M220 238 L262 159" stroke="#f06060" opacity="0.6" stroke-width="1.2" marker-end="url(#arr)"/>
+            <!-- Analogue → CTI -->
+            <path class="flow-line" d="M121 354 L121 368" stroke="#f09040" opacity="0.6" marker-end="url(#arr)"/>
+            <!-- CTI → ARC -->
+            <path class="flow-line" d="M220 393 L262 163" stroke="#f09040" opacity="0.4" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- ARC → Service Manager -->
+            <path class="flow-line" d="M357 170 L357 192" stroke="#f5c842" opacity="0.6" marker-end="url(#arr)"/>
+            <!-- TSP Portal → Service Manager -->
+            <path class="flow-line" d="M702 170 L562 192" stroke="#2ec4a0" opacity="0.5" marker-end="url(#arr)"/>
+            <!-- Service Manager → Gateway -->
+            <path class="flow-line" d="M562 300 L1024 263" stroke="#9b7af5" opacity="0.4" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- Service Manager → Data Warehouse -->
+            <path class="flow-line" d="M562 320 L740 290" stroke="#f5a623" opacity="0.4" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- Data Warehouse → Wallboards -->
+            <path class="flow-dashed" d="M858 192 L538 170" stroke="#f5a623" opacity="0.3" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- DMP → TDP bottom -->
+            <path class="flow-line" d="M121 418 L139 466" stroke="#f5a623" opacity="0.4" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- ARC → TDP bottom -->
+            <path class="flow-dashed" d="M310 170 L310 440 L139 466" stroke="#5bc4ef" opacity="0.2" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- Service Manager → TDP bottom -->
+            <path class="flow-dashed" d="M412 366 L412 440 L240 466" stroke="#5bc4ef" opacity="0.2" stroke-width="1" marker-end="url(#arr)"/>
+            <!-- Proactive → Notifications -->
+            <path class="flow-line" d="M651 262 L651 274" stroke="#2ec4a0" opacity="0.5" marker-end="url(#arr)"/>
+            <!-- Service Hooks → External -->
+            <path class="flow-dashed" d="M1204 147 L1242 157" stroke="#9b7af5" opacity="0.4" marker-end="url(#arr)"/>
+            <!-- Gateway → External -->
+            <path class="flow-dashed" d="M1204 205 L1242 148" stroke="#9b7af5" opacity="0.35" marker-end="url(#arr)"/>
+            <!-- Bulk Importer → Service Manager (within core platform) -->
+            <path class="flow-line" d="M651 354 L562 330" stroke="#2ec4a0" opacity="0.35" stroke-width="1" marker-end="url(#arr)"/>
+          </svg>
+          </div>
+          </div>
+        </div>
+
+        <!-- Module Detail Panel -->
+        <div id="module-detail-panel" style="display:none" class="card">
+          <div class="section-header" style="margin-bottom:10px">
+            <div id="detail-title" class="section-title"></div>
+            <button onclick="document.getElementById('module-detail-panel').style.display='none'" style="background:none;border:none;color:var(--text3);font-size:18px;cursor:pointer;line-height:1">×</button>
+          </div>
+          <div id="detail-body" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
+        </div>
+      </div>
+
+      <!-- ROADMAP VIEW -->
+      <div id="view-roadmap" class="view">
+
+        <!-- Toolbar -->
+        <div class="card" style="margin-bottom:16px;padding:14px 18px">
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;min-width:52px">Period</span>
+                <div style="display:flex;gap:6px" id="fy-filters">
+                  <button class="fy-btn active" data-fy="FY26" onclick="toggleFY(this)">FY26</button>
+                  <button class="fy-btn active" data-fy="FY27" onclick="toggleFY(this)">FY27</button>
+                  <button class="fy-btn active" data-fy="FY28" onclick="toggleFY(this)">FY28</button>
+                </div>
+              </div>
+              <div style="width:1px;height:24px;background:var(--border);flex-shrink:0"></div>
+              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;min-width:52px">Category</span>
+                <div style="display:flex;gap:6px;flex-wrap:wrap">
+                  <button class="fy-btn active" data-cat="Product - Software" onclick="toggleCat(this)">Product — Software</button>
+                  <button class="fy-btn active" data-cat="Product - Hardware" onclick="toggleCat(this)">Product — Hardware</button>
+                  <button class="fy-btn active" data-cat="Product - Data" onclick="toggleCat(this)">Product — Data</button>
+                  <button class="fy-btn active" data-cat="Engineering" onclick="toggleCat(this)">Engineering</button>
+                  <button class="fy-btn active" data-cat="Innovation" onclick="toggleCat(this)">Innovation</button>
+                </div>
+              </div>
+              <button class="btn primary sm" style="margin-left:auto" onclick="openFeatureModal()">+ Add Feature</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span style="font-size:11px;color:var(--text3);font-family:var(--font-mono);letter-spacing:0.06em;text-transform:uppercase;min-width:52px">Region</span>
+              <div style="display:flex;gap:6px;flex-wrap:wrap" id="region-filters"></div>
+              <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-left:4px">Click to isolate · click again to restore all</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Summary stats row -->
+        <div class="grid-4" id="roadmap-stats" style="margin-bottom:16px"></div>
+
+        <!-- Roadmap timeline board -->
+        <div id="roadmap-board"></div>
+
+      </div>
+
+      <!-- RELEASES VIEW -->
+      <div id="view-releases" class="view">
+        <div class="card" style="margin-bottom:16px">
+          <div class="section-header" style="margin-bottom:4px">
+            <div class="card-title" style="margin-bottom:0">TSP Platform — Feature Accumulation by Release</div>
+            <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono)">Staircase shows cumulative features from TSP 1.5 baseline through each release</div>
+          </div>
+          <div style="font-size:12px;color:var(--text3);margin-top:6px;margin-bottom:16px">Starting baseline: TSP 1.5 — 1,000 features. Each step shows new features added per release, coloured by module.</div>
+
+          <!-- Legend -->
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px" id="releases-legend"></div>
+
+          <!-- Staircase SVG -->
+          <div style="overflow-x:auto">
+            <svg id="releases-svg" width="100%" style="display:block;min-width:800px"></svg>
+          </div>
+        </div>
+
+        <!-- Per-release breakdown table -->
+        <div class="card">
+          <div class="card-title">Feature Breakdown by Release &amp; Module</div>
+          <div style="overflow-x:auto">
+            <table class="data-table" id="releases-table"></table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- FEATURE MODAL -->
+<div id="feature-modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:200;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:520px;max-height:90vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h3 style="font-family:var(--font-head);font-size:16px;font-weight:600;" id="feature-modal-title">Add Feature</h3>
+      <button onclick="closeFeatureModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <div class="form-group">
+        <label>Feature Name</label>
+        <input type="text" id="feat-name" placeholder="e.g. Ready Not Ready">
+      </div>
+      <div class="form-group">
+        <label>Description (optional)</label>
+        <input type="text" id="feat-desc" placeholder="Brief description of the feature">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select id="feat-category">
+          <option value="Product - Software">Product — Software</option>
+          <option value="Product - Hardware">Product — Hardware</option>
+          <option value="Product - Data">Product — Data</option>
+          <option value="Engineering">Engineering</option>
+          <option value="Innovation">Innovation</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Module</label>
+        <select id="feat-module"></select>
+      </div>
+      <div class="form-group">
+        <label>Planning Period</label>
+        <select id="feat-fy">
+          <option>FY26</option>
+          <option>FY27</option>
+          <option>FY28</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Requesting Regions</label>
+        <div id="feat-regions" style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px"></div>
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select id="feat-status">
+          <option value="planned">Planned</option>
+          <option value="in_progress">In Progress</option>
+          <option value="complete">Complete</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px;">
+      <button class="btn" id="feat-delete-btn" style="color:var(--coral);border-color:rgba(240,96,96,0.3);display:none" onclick="deleteFeature()">Delete</button>
+      <button class="btn" onclick="closeFeatureModal()">Cancel</button>
+      <button class="btn primary" onclick="saveFeature()">Save Feature</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD REGION MODAL -->
+<div id="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:100;display:none;align-items:center;justify-content:center;">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r2);padding:28px;width:480px;max-height:85vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h3 style="font-family:var(--font-head);font-size:16px;font-weight:600;">Add New Region</h3>
+      <button onclick="closeModal()" style="background:none;border:none;color:var(--text3);font-size:20px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div class="form-grid" style="gap:12px;margin-bottom:16px;">
+      <div class="form-group">
+        <label>Country Name</label>
+        <input type="text" id="new-country" placeholder="e.g. United Kingdom">
+      </div>
+      <div class="form-group">
+        <label>Flag Emoji</label>
+        <input type="text" id="new-flag" placeholder="🇬🇧">
+      </div>
+      <div class="form-group" style="grid-column:1/-1">
+        <label>Total Service Users</label>
+        <input type="number" id="new-users" placeholder="200000">
+      </div>
+    </div>
+    <div style="text-align:right;display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn primary" onclick="addRegion()">Add Region</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── DATA MODEL ───────────────────────────────────────────────
+const MODULES = [
+  { key: 'arc', label: 'ARC', color: '#4f8ef7' },
+  { key: 'service_manager', label: 'Service Manager', color: '#7b5ef8' },
+  { key: 'tsp_portal', label: 'TSP Portal', color: '#2ec4a0' },
+  { key: 'proactive', label: 'Proactive Service', color: '#f5a623' },
+  { key: 'service_hooks', label: 'Service Hooks', color: '#f06060' },
+  { key: 'notifications', label: 'Notifications', color: '#5bbf72' },
+  { key: 'ies', label: 'IES (API Gateway)', color: '#9b7af5' },
+  { key: 'bulk_importer', label: 'Bulk Importer', color: '#f06fa0' },
+  { key: 'wallboards', label: 'Wallboards', color: '#5bc4ef' },
+  { key: 'tdp', label: 'Tunstall Data Platform', color: '#e8a87c' },
+  { key: 'dmp', label: 'DMP', color: '#98d98e' },
+  { key: 'identity', label: 'Identity', color: '#e879a0' }
+];
+
+const VERSIONS = ['1.3','1.5','2.1','2.3','2.4','2.5'];
+const REGION_COLORS = {
+  uk:'#4f8ef7', es:'#f06060', se:'#2ec4a0', dk:'#f5a623',
+  fr:'#9b7af5', de:'#5bbf72', nl:'#f06fa0', au:'#5bc4ef'
+};
+const REGION_FLAGS = {
+  uk:'🇬🇧', es:'🇪🇸', se:'🇸🇪', dk:'🇩🇰', fr:'🇫🇷', de:'🇩🇪', nl:'🇳🇱', au:'🇦🇺'
+};
+
+let data = {
+  regions: {
+    uk: { name: 'United Kingdom', flag: '🇬🇧', code: 'uk', totalUsers: 375463, color: '#4f8ef7',
+      deployments: [
+        { instance: 'SAAS3', type: 'Hosted', version: '1.5', users: 221281, backup: 'AAG', cti: 4,
+          modules: { arc:221281, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:60000, identity:250 } },
+        { instance: 'SAAS4', type: 'Hosted', version: '1.5', users: 94894, backup: 'AAG', cti: 4,
+          modules: { arc:94894, service_manager:94894, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:30000, identity:250 } },
+        { instance: 'UK On Prem', type: 'OnPremise', version: '1.5', users: 3034, backup: 'AAG', cti: 4,
+          modules: { arc:3034, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:1000, identity:25 } },
+        { instance: 'Ireland On Prem', type: 'OnPremise', version: '1.5', users: 56254, backup: 'AAG', cti: 4,
+          modules: { arc:56254, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:4000, identity:25 } }
+      ]
+    },
+    es: { name: 'Spain', flag: '🇪🇸', code: 'es', totalUsers: 988659, color: '#f06060',
+      regionalModules: [
+        { name: 'Sigma', desc: 'Spain-specific telecare management platform' },
+        { name: 'EVA', desc: 'Spain-specific emergency voice assistant application' },
+        { name: 'AVA', desc: 'Spain-specific alarm and voice analytics platform' },
+        { name: 'PNC Mobile', desc: 'Spain-specific mobile application for PNC365 service users' },
+        { name: 'Savi', desc: 'Smart Habits — Spain-specific activity and wellness monitoring application' },
+        { name: 'PGP App', desc: 'Staff Scheduling — Spain-specific workforce planning and shift management tool' },
+        { name: 'Pex IP', desc: 'Video Calls — Spain-specific video call integration for remote care consultations' },
+        { name: 'Excally', desc: 'Auto Dialler — Spain-specific automated outbound calling solution' }
+      ],
+      deployments: [
+        { instance: 'ASSDA', type: 'OnPremise', version: '2.3', users: 320147, backup: 'Replication', cti: 6,
+          modules: { arc:320147, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Centel', type: 'Hosted', version: '1.5', users: 2222, backup: 'AAG', cti: 3,
+          modules: { arc:2222, service_manager:2222, tsp_portal:2222, proactive:2222, service_hooks:2222, notifications:2222, ies:2222, bulk_importer:2222, wallboards:2222, tdp:0, dmp:2222, identity:15 } },
+        { instance: 'Televida', type: 'Hosted', version: '1.5', users: 273321, backup: 'AAG', cti: 3,
+          modules: { arc:273321, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:150 } },
+        { instance: 'Ilunion', type: 'OnPremise', version: '1.5', users: 78422, backup: 'AAG', cti: 3,
+          modules: { arc:78422, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Cruz Roja Espana', type: 'Hosted', version: '1.3', users: 127928, backup: 'AAG', cti: 3,
+          modules: { arc:127928, service_manager:127928, tsp_portal:127928, proactive:0, service_hooks:127928, notifications:0, ies:127928, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Atzenia', type: 'Hosted', version: '1.5', users: 186619, backup: 'AAG', cti: 3,
+          modules: { arc:186619, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } }
+      ]
+    },
+    se: { name: 'Sweden', flag: '🇸🇪', code: 'se', totalUsers: 42800, color: '#2ec4a0',
+      regionalModules: [
+        { name: 'Utförarapp', desc: 'First responders app for Sweden — field staff alarm response and care coordination' }
+      ],
+      deployments: [
+        { instance: 'TSP-SE-PROD-01', type: 'Hosted', version: '2.4', users: 42800, backup: 'AAG', cti: 2,
+          modules: { arc:42800, service_manager:42800, tsp_portal:42800, proactive:0, service_hooks:42800, notifications:42800, ies:42800, bulk_importer:42800, wallboards:42800, tdp:0, dmp:42800, identity:400 } }
+      ]
+    },
+    dk: { name: 'Denmark', flag: '🇩🇰', code: 'dk', totalUsers: 13479, color: '#f5a623',
+      deployments: [
+        { instance: 'TSP-DK-PROD-01', type: 'OnPremise', version: '1.5', users: 13479, backup: 'Replication', cti: 2,
+          modules: { arc:13479, service_manager:13479, tsp_portal:13479, proactive:0, service_hooks:13479, notifications:13479, ies:13479, bulk_importer:13479, wallboards:13479, tdp:0, dmp:13479, identity:50 } }
+      ]
+    },
+    fr: { name: 'France', flag: '🇫🇷', code: 'fr', totalUsers: 277200, color: '#9b7af5',
+      deployments: [
+        { instance: 'France', type: 'Hosted', version: '1.5', users: 235000, backup: 'AAG', cti: 3,
+          modules: { arc:235000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Luxembourg', type: 'Hosted', version: '1.5', users: 2200, backup: 'AAG', cti: 3,
+          modules: { arc:2200, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Belgium', type: 'Hosted', version: '1.5', users: 40000, backup: 'AAG', cti: 3,
+          modules: { arc:40000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } }
+      ]
+    },
+    de: { name: 'Germany', flag: '🇩🇪', code: 'de', totalUsers: 450000, color: '#5bbf72',
+      regionalModules: [
+        { name: 'PNC365', desc: 'Germany-specific care management and alarm handling application' }
+      ],
+      deployments: [
+        { instance: 'PNC365', type: 'Hosted', version: '2.1', users: 200000, backup: 'Replication', cti: 3,
+          modules: { arc:200000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Malteser', type: 'OnPremise', version: '2.1', users: 210000, backup: 'Replication', cti: 2,
+          modules: { arc:210000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } },
+        { instance: 'Germany OnPrem', type: 'OnPremise', version: '1.5', users: 40000, backup: 'Replication', cti: 2,
+          modules: { arc:40000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } }
+      ]
+    },
+    nl: { name: 'Netherlands', flag: '🇳🇱', code: 'nl', totalUsers: 12000, color: '#f06fa0',
+      deployments: [
+        { instance: 'TSP-NL-PROD-01', type: 'Hosted', version: '2.4', users: 12000, backup: 'AAG', cti: 1,
+          modules: { arc:12000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } }
+      ]
+    },
+    au: { name: 'Australia', flag: '🇦🇺', code: 'au', totalUsers: 53000, color: '#5bc4ef',
+      deployments: [
+        { instance: 'TSP-AU-PROD-01', type: 'Hosted', version: '2.1', users: 53000, backup: 'Replication', cti: 2,
+          modules: { arc:53000, service_manager:0, tsp_portal:0, proactive:0, service_hooks:0, notifications:0, ies:0, bulk_importer:0, wallboards:0, tdp:0, dmp:0, identity:0 } }
+      ]
+    },
+    fi: { name: 'Finland', flag: '🇫🇮', code: 'fi', totalUsers: 20700, color: '#38b6ff',
+      deployments: [
+        { instance: 'FI-HOSTED-01', type: 'Hosted', version: '2.1', users: 11400, backup: 'AAG', cti: 2,
+          modules: { arc:11400, service_manager:11400, tsp_portal:11400, proactive:11400, service_hooks:11400, notifications:11400, ies:11400, bulk_importer:11400, wallboards:11400, tdp:11400, dmp:11400, identity:11400 } },
+        { instance: 'FI-HOSTED-02', type: 'Hosted', version: '2.1', users: 4300, backup: 'AAG', cti: 2,
+          modules: { arc:4300, service_manager:4300, tsp_portal:4300, proactive:4300, service_hooks:4300, notifications:4300, ies:4300, bulk_importer:4300, wallboards:4300, tdp:4300, dmp:4300, identity:4300 } },
+        { instance: 'FI-ONPREM-01', type: 'OnPremise', version: '2.1', users: 5000, backup: 'AAG', cti: 2,
+          modules: { arc:5000, service_manager:5000, tsp_portal:5000, proactive:5000, service_hooks:5000, notifications:5000, ies:5000, bulk_importer:5000, wallboards:5000, tdp:5000, dmp:5000, identity:5000 } }
+      ]
+    }
+  }
+};
+
+let currentView = 'global';
+let editingRegion = null;
+let charts = {};
+
+// ─── UTILS ────────────────────────────────────────────────────
+function fmt(n) { return (n||0).toLocaleString(); }
+function pct(a, b) { return b ? Math.round((a/b)*100) : 0; }
+
+function getAllDeployments() {
+  const deps = [];
+  for (const [code, reg] of Object.entries(data.regions)) {
+    for (const dep of reg.deployments) {
+      deps.push({ ...dep, regionCode: code, regionName: reg.name, regionFlag: reg.flag, regionColor: reg.color });
+    }
+  }
+  return deps;
+}
+
+function getGlobalModuleTotals() {
+  const totals = {};
+  MODULES.forEach(m => totals[m.key] = 0);
+  for (const reg of Object.values(data.regions)) {
+    for (const dep of reg.deployments) {
+      MODULES.forEach(m => { totals[m.key] += (dep.modules[m.key] || 0); });
+    }
+  }
+  return totals;
+}
+
+function getTotalUsers() {
+  return Object.values(data.regions).reduce((s, r) => s + r.totalUsers, 0);
+}
+
+// ─── VIEW SWITCHING ───────────────────────────────────────────
+function switchView(v, regionCode) {
+  currentView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+  const titles = { global: 'Global Overview', modules: 'Module Analysis', versions: 'Version Matrix', marketecture: 'Platform Marketecture', roadmap: 'Roadmap', releases: 'Releases', region: 'Edit Region' };
+  document.getElementById('view-title').textContent = titles[v] || v;
+
+  if (v === 'global') {
+    document.querySelectorAll('.nav-item')[0]?.classList.add('active');
+    renderGlobal();
+  } else if (v === 'modules') {
+    document.querySelectorAll('.nav-item')[1]?.classList.add('active');
+    renderModules();
+  } else if (v === 'versions') {
+    document.querySelectorAll('.nav-item')[2]?.classList.add('active');
+    renderVersions();
+  } else if (v === 'marketecture') {
+    document.querySelectorAll('.nav-item')[3]?.classList.add('active');
+    document.getElementById('module-detail-panel').style.display = 'none';
+    renderMktRegionFilters();
+    renderMarketectureRegionalModules();
+  } else if (v === 'roadmap') {
+    document.querySelectorAll('.nav-item')[4]?.classList.add('active');
+    renderRoadmap();
+  } else if (v === 'releases') {
+    document.querySelectorAll('.nav-item')[5]?.classList.add('active');
+    renderReleases();
+  } else if (v === 'region' && regionCode) {
+    editingRegion = regionCode;
+    renderRegionEditor(regionCode);
+  }
+  renderSidebar();
+}
+
+// ─── SIDEBAR ──────────────────────────────────────────────────
+function renderSidebar() {
+  const nav = document.getElementById('region-nav');
+  const totalDeps = Object.values(data.regions).reduce((s,r) => s + r.deployments.length, 0);
+  const totalUsers = getTotalUsers();
+
+  document.getElementById('nav-total-regions').textContent = Object.keys(data.regions).length;
+  document.getElementById('nav-total-deps').textContent = totalDeps;
+  document.getElementById('nav-total-users').textContent = fmt(totalUsers);
+
+  nav.innerHTML = Object.entries(data.regions).map(([code, reg]) => `
+    <div class="nav-item${editingRegion===code && currentView==='region' ? ' active':''}" onclick="switchView('region','${code}')">
+      <span style="font-size:15px">${reg.flag}</span>
+      <span style="flex:1">${reg.name}</span>
+      <span style="font-size:10px;color:var(--text3);font-family:var(--font-mono)">${reg.deployments.length}d</span>
+    </div>
+  `).join('');
+}
+
+// ─── GLOBAL VIEW ─────────────────────────────────────────────
+function renderGlobal() {
+  const totalUsers = getTotalUsers();
+  const totalDeps = getAllDeployments().length;
+  const totalRegions = Object.keys(data.regions).length;
+  const moduleTotals = getGlobalModuleTotals();
+
+  // Stat cards
+  document.getElementById('global-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Service Users</div>
+      <div class="stat-value" style="color:var(--accent)">${fmt(totalUsers)}</div>
+      <div class="stat-sub">Across all regions</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Regions</div>
+      <div class="stat-value" style="color:var(--teal)">${totalRegions}</div>
+      <div class="stat-sub">Configured deployments</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Deployments</div>
+      <div class="stat-value" style="color:var(--amber)">${totalDeps}</div>
+      <div class="stat-sub">OnPremise + Hosted</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">ARC Users (Mandatory)</div>
+      <div class="stat-value" style="color:var(--purple)">${fmt(moduleTotals.arc)}</div>
+      <div class="stat-sub">${pct(moduleTotals.arc, totalUsers)}% of total users</div>
+    </div>
+  `;
+
+  // Country grid
+  document.getElementById('country-grid').innerHTML = Object.entries(data.regions).map(([code, reg]) => {
+    const rmods = reg.regionalModules || [];
+    return `
+    <div class="country-card" data-region="${code}" onclick="switchView('region','${code}')">
+      <div class="flag">${reg.flag}</div>
+      <div class="name">${reg.name}</div>
+      <div class="users">${fmt(reg.totalUsers)} users</div>
+      <div class="dep-count">${reg.deployments.length} deployment${reg.deployments.length !== 1 ? 's':''}</div>
+      ${rmods.length > 0 ? `
+        <div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">
+          ${rmods.map(m => `<span class="regional-module-chip">${m.name}</span>`).join('')}
+        </div>` : ''}
+      <div class="cti-dots" style="margin-top:6px">
+        ${reg.deployments.map(d => Array.from({length: d.cti}).map(() => `<div class="cti-dot"></div>`).join('')).join('')}
+      </div>
+    </div>
+  `}).join('');
+
+  // Users chart
+  destroyChart('chart-users');
+  const regions = Object.values(data.regions);
+  charts['chart-users'] = new Chart(document.getElementById('chart-users'), {
+    type: 'bar',
+    data: {
+      labels: regions.map(r => r.name),
+      datasets: [{
+        label: 'Service Users',
+        data: regions.map(r => r.totalUsers),
+        backgroundColor: regions.map(r => r.color + 'cc'),
+        borderColor: regions.map(r => r.color),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#9098b0', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#9098b0', font: { size: 11 }, callback: v => (v>=1000000 ? (v/1000000).toFixed(1)+'M' : v>=1000 ? Math.round(v/1000)+'k' : v) }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Module bars
+  const maxVal = Math.max(...MODULES.map(m => moduleTotals[m.key]));
+  document.getElementById('module-bars').innerHTML = MODULES.map(m => `
+    <div class="module-bar-row">
+      <div class="module-bar-label">${m.label}</div>
+      <div class="module-bar-track">
+        <div class="module-bar-fill" style="width:${pct(moduleTotals[m.key], maxVal)}%;background:${m.color}"></div>
+      </div>
+      <div class="module-bar-val">${fmt(moduleTotals[m.key])}</div>
+    </div>
+  `).join('');
+
+  // Deployment table
+  const deps = getAllDeployments();
+  document.getElementById('deploy-tbody').innerHTML = deps.map(dep => `
+    <tr>
+      <td style="font-family:var(--font-mono);color:var(--text)">${dep.instance || '—'}</td>
+      <td><span style="margin-right:6px">${dep.regionFlag}</span>${dep.regionName}</td>
+      <td><span class="badge ${dep.type === 'Hosted' ? 'hosted' : 'onprem'}">${dep.type}</span></td>
+      <td><span class="badge version">v${dep.version}</span></td>
+      <td style="font-family:var(--font-mono)">${fmt(dep.users)}</td>
+      <td><span class="badge ${dep.backup === 'AAG' ? 'backup-aag' : 'backup-rep'}">${dep.backup}</span></td>
+      <td>
+        <div style="display:flex;align-items:center;gap:4px">
+          <div style="display:flex;gap:3px">${Array.from({length: dep.cti}).map(() => `<div class="cti-dot"></div>`).join('')}</div>
+          <span style="font-family:var(--font-mono);color:var(--text3)">${dep.cti}</span>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+// ─── MODULE ANALYSIS VIEW ─────────────────────────────────────
+function renderModules() {
+  const regions = Object.values(data.regions);
+  const moduleTotals = getGlobalModuleTotals();
+
+  // Bubble chart: X = region index, Y = module index, R = users
+  destroyChart('chart-bubble');
+  const maxBubble = Math.max(...MODULES.flatMap(m => regions.map(r =>
+    r.deployments.reduce((s,d) => s + (d.modules[m.key]||0), 0)
+  )));
+
+  const datasets = regions.map((reg, ri) => ({
+    label: reg.name,
+    data: MODULES.map((m, mi) => {
+      const val = reg.deployments.reduce((s,d) => s + (d.modules[m.key]||0), 0);
+      if (val === 0) return null;
+      return { x: ri, y: mi, r: Math.max(3, Math.sqrt(val / maxBubble) * 28) };
+    }).filter(Boolean),
+    backgroundColor: reg.color + '99',
+    borderColor: reg.color,
+    borderWidth: 1
+  }));
+
+  charts['chart-bubble'] = new Chart(document.getElementById('chart-bubble'), {
+    type: 'bubble',
+    data: { datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => {
+              const reg = regions[ctx.raw.x];
+              const mod = MODULES[ctx.raw.y];
+              const val = reg.deployments.reduce((s,d) => s + (d.modules[mod.key]||0), 0);
+              return `${reg.name} → ${mod.label}: ${fmt(val)}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          min: -0.5,
+          max: regions.length - 0.5,
+          afterBuildTicks: axis => { axis.ticks = regions.map((_, i) => ({ value: i })); },
+          ticks: {
+            color: '#9098b0',
+            font: { size: 10 },
+            callback: v => {
+              const r = regions[Math.round(v)];
+              return r ? r.flag + ' ' + r.name : '';
+            },
+            maxRotation: 30,
+            minRotation: 30,
+            autoSkip: false
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          type: 'linear',
+          min: -0.5,
+          max: MODULES.length - 0.5,
+          afterBuildTicks: axis => { axis.ticks = MODULES.map((_, i) => ({ value: i })); },
+          ticks: {
+            color: '#9098b0',
+            font: { size: 10 },
+            callback: v => MODULES[Math.round(v)]?.label || '',
+            autoSkip: false
+          },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    }
+  });
+
+  // Bar chart — % coverage per region per module
+  destroyChart('chart-heatmap');
+  charts['chart-heatmap'] = new Chart(document.getElementById('chart-heatmap'), {
+    type: 'bar',
+    data: {
+      labels: regions.map(r => r.name),
+      datasets: MODULES.slice(0, 6).map(m => ({
+        label: m.label,
+        data: regions.map(r => {
+          const val = r.deployments.reduce((s,d) => s + (d.modules[m.key]||0), 0);
+          return pct(val, r.totalUsers);
+        }),
+        backgroundColor: m.color + 'bb',
+        borderColor: m.color,
+        borderWidth: 1,
+        borderRadius: 2
+      }))
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#9098b0', font: {size:10}, boxWidth: 10, boxHeight: 10 }
+        }
+      },
+      scales: {
+        x: { ticks: { color: '#9098b0', font:{size:10} }, grid: { color: 'rgba(255,255,255,0.04)' }, stacked: false },
+        y: { ticks: { color: '#9098b0', font:{size:10}, callback: v => v+'%' }, grid: { color: 'rgba(255,255,255,0.04)' }, max: 110 }
+      }
+    }
+  });
+
+  // Module totals list
+  const sorted = [...MODULES].sort((a,b) => (moduleTotals[b.key]||0) - (moduleTotals[a.key]||0));
+  const maxTotal = moduleTotals[sorted[0].key] || 1;
+  document.getElementById('module-totals-list').innerHTML = sorted.map((m,i) => `
+    <div class="module-bar-row">
+      <div style="min-width:18px;font-size:11px;color:var(--text3);font-family:var(--font-mono)">${i+1}</div>
+      <div class="module-bar-label" style="min-width:120px">${m.label}</div>
+      <div class="module-bar-track">
+        <div class="module-bar-fill" style="width:${pct(moduleTotals[m.key], maxTotal)}%;background:${m.color}"></div>
+      </div>
+      <div class="module-bar-val">${fmt(moduleTotals[m.key])}</div>
+    </div>
+  `).join('');
+}
+
+// ─── VERSION MATRIX VIEW ──────────────────────────────────────
+function renderVersions() {
+  const deps = getAllDeployments();
+
+  // Version distribution chart
+  const verCounts = {};
+  VERSIONS.forEach(v => verCounts[v] = 0);
+  deps.forEach(d => { verCounts[d.version] = (verCounts[d.version]||0) + 1; });
+
+  destroyChart('chart-versions');
+  const verColors = { '1.3':'#f06060','1.5':'#f5a623','2.1':'#9b7af5','2.3':'#5bc4ef','2.4':'#2ec4a0','2.5':'#4f8ef7' };
+  charts['chart-versions'] = new Chart(document.getElementById('chart-versions'), {
+    type: 'bar',
+    data: {
+      labels: VERSIONS,
+      datasets: [{
+        label: 'Deployments',
+        data: VERSIONS.map(v => verCounts[v]),
+        backgroundColor: VERSIONS.map(v => verColors[v]+'cc'),
+        borderColor: VERSIONS.map(v => verColors[v]),
+        borderWidth: 1,
+        borderRadius: 4
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#9098b0', font:{size:12}, callback: (_, i) => 'v' + VERSIONS[i] }, grid: { color: 'rgba(255,255,255,0.04)' } },
+        y: { ticks: { color: '#9098b0', font:{size:11}, stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.04)' } }
+      }
+    }
+  });
+
+  // Version × Region matrix
+  const regions = Object.values(data.regions);
+  let matrix = `<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Region</th>`;
+  VERSIONS.forEach(v => { matrix += `<th>v${v}</th>`; });
+  matrix += `<th>Deployments</th></tr></thead><tbody>`;
+  regions.forEach(reg => {
+    matrix += `<tr><td><span style="margin-right:6px">${reg.flag}</span>${reg.name}</td>`;
+    VERSIONS.forEach(v => {
+      const count = reg.deployments.filter(d => d.version === v).length;
+      matrix += `<td>${count > 0 ? `<span class="badge version" style="background:${verColors[v]}22;border-color:${verColors[v]}66;color:${verColors[v]}">v${v} ×${count}</span>` : '<span style="color:var(--border2)">—</span>'}</td>`;
+    });
+    matrix += `<td style="color:var(--text)">${reg.deployments.length}</td></tr>`;
+  });
+  matrix += `</tbody></table></div>`;
+  document.getElementById('version-matrix').innerHTML = matrix;
+
+  // Backup chart
+  const aagCount = deps.filter(d => d.backup === 'AAG').length;
+  const repCount = deps.filter(d => d.backup === 'Replication').length;
+
+  destroyChart('chart-backup');
+  charts['chart-backup'] = new Chart(document.getElementById('chart-backup'), {
+    type: 'doughnut',
+    data: {
+      labels: ['AAG', 'Replication'],
+      datasets: [{
+        data: [aagCount, repCount],
+        backgroundColor: ['#9b7af5cc', '#5bbf72cc'],
+        borderColor: ['#9b7af5', '#5bbf72'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: true, labels: { color: '#9098b0', font:{size:12} } }
+      },
+      cutout: '60%'
+    }
+  });
+}
+
+// ─── REGION EDITOR ────────────────────────────────────────────
+function renderRegionEditor(code) {
+  const reg = data.regions[code];
+  if (!reg) return;
+  document.getElementById('view-title').textContent = reg.flag + ' ' + reg.name;
+
+  let html = `
+    <div class="card" style="margin-bottom:16px">
+      <div class="section-header">
+        <div class="card-title" style="margin-bottom:0">Region Settings</div>
+        <button class="btn sm" style="color:var(--coral);border-color:rgba(240,96,96,0.3)" onclick="deleteRegion('${code}')">Delete Region</button>
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Country Name</label>
+          <input type="text" value="${reg.name}" onchange="updateRegionField('${code}','name',this.value)">
+        </div>
+        <div class="form-group">
+          <label>Flag Emoji</label>
+          <input type="text" value="${reg.flag}" onchange="updateRegionField('${code}','flag',this.value)">
+        </div>
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Total Service Users</label>
+          <input type="number" value="${reg.totalUsers}" onchange="updateRegionField('${code}','totalUsers',+this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="section-header" style="margin-bottom:12px;margin-top:4px">
+      <div class="section-title">Regional Modules</div>
+      <button class="btn sm primary" onclick="addRegionalModule('${code}')">+ Add Module</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">Applications specific to this region that are not part of the standard TSP platform module set.</div>
+    <div id="rm-list-${code}">
+      ${renderRegionalModules(code)}
+    </div>
+
+    <div class="section-header" style="margin-bottom:12px;margin-top:20px">
+      <div class="section-title">Deployments</div>
+      <button class="btn sm primary" onclick="addDeployment('${code}')">+ Add Deployment</button>
+    </div>
+    <div id="dep-list-${code}">
+      ${renderDeploymentList(code)}
+    </div>
+  `;
+  document.getElementById('region-editor').innerHTML = html;
+}
+
+function renderRegionalModules(code) {
+  const reg = data.regions[code];
+  const mods = reg.regionalModules || [];
+  if (mods.length === 0) {
+    return `<div style="color:var(--text3);font-size:12px;padding:12px 0">No regional modules. Click "+ Add Module" to add one.</div>`;
+  }
+  return mods.map((m, i) => `
+    <div class="regional-module-item">
+      <div class="rm-info">
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div class="form-group" style="margin:0">
+            <label>Name</label>
+            <input type="text" value="${m.name}" placeholder="Module name"
+              onchange="updateRegionalModule('${code}',${i},'name',this.value)">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label>Description</label>
+            <input type="text" value="${m.desc||''}" placeholder="Brief description"
+              onchange="updateRegionalModule('${code}',${i},'desc',this.value)">
+          </div>
+        </div>
+      </div>
+      <button onclick="removeRegionalModule('${code}',${i})"
+        style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1;padding:2px 4px;flex-shrink:0"
+        title="Remove">×</button>
+    </div>
+  `).join('');
+}
+
+function addRegionalModule(code) {
+  if (!data.regions[code].regionalModules) data.regions[code].regionalModules = [];
+  data.regions[code].regionalModules.push({ name: '', desc: '' });
+  document.getElementById('rm-list-'+code).innerHTML = renderRegionalModules(code);
+}
+
+function removeRegionalModule(code, i) {
+  data.regions[code].regionalModules.splice(i, 1);
+  document.getElementById('rm-list-'+code).innerHTML = renderRegionalModules(code);
+}
+
+function updateRegionalModule(code, i, field, value) {
+  data.regions[code].regionalModules[i][field] = value;
+}
+
+
+function renderDeploymentList(code) {
+  const reg = data.regions[code];
+  return reg.deployments.map((dep, di) => `
+      <div class="section-header">
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <span style="font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--text)">${dep.instance || 'Unnamed'}</span>
+          <span class="badge ${dep.type==='Hosted'?'hosted':'onprem'}">${dep.type}</span>
+          <span class="badge version">v${dep.version}</span>
+          <span style="font-size:12px;color:var(--text3);font-family:var(--font-mono)">${fmt(dep.users)} users</span>
+        </div>
+        <button class="btn sm" style="color:var(--coral);border-color:rgba(240,96,96,0.3)" onclick="removeDeployment('${code}',${di})">Remove</button>
+      </div>
+
+      <div class="form-grid" style="margin-bottom:14px">
+        <div class="form-group" style="grid-column:1/-1">
+          <label>Instance Name</label>
+          <input type="text" value="${dep.instance||''}" placeholder="e.g. TSP-UK-PROD-01" onchange="updateDep('${code}',${di},'instance',this.value);this.closest('.card').querySelector('.section-header span').textContent=this.value||'Unnamed'">
+        </div>
+        <div class="form-group">
+          <label>Deployment Type</label>
+          <select onchange="updateDep('${code}',${di},'type',this.value)">
+            <option ${dep.type==='OnPremise'?'selected':''}>OnPremise</option>
+            <option ${dep.type==='Hosted'?'selected':''}>Hosted</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Platform Version</label>
+          <select onchange="updateDep('${code}',${di},'version',this.value)">
+            ${VERSIONS.map(v => `<option ${dep.version===v?'selected':''}>${v}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Service Users in Deployment</label>
+          <input type="number" value="${dep.users}" onchange="updateDep('${code}',${di},'users',+this.value)">
+        </div>
+        <div class="form-group">
+          <label>Backup Method</label>
+          <select onchange="updateDep('${code}',${di},'backup',this.value)">
+            <option ${dep.backup==='AAG'?'selected':''}>AAG</option>
+            <option ${dep.backup==='Replication'?'selected':''}>Replication</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>CTI Servers</label>
+          <input type="number" min="0" max="20" value="${dep.cti}" onchange="updateDep('${code}',${di},'cti',+this.value)">
+        </div>
+      </div>
+
+      <div style="font-size:11px;color:var(--text3);font-family:var(--font-mono);margin-bottom:8px;letter-spacing:0.06em;text-transform:uppercase">Module Users</div>
+      <div class="modules-grid">
+        ${MODULES.map(m => `
+          <div class="module-input">
+            <label>${m.label}</label>
+            <input type="number" value="${dep.modules[m.key]||0}" onchange="updateDepModule('${code}',${di},'${m.key}',+this.value)" placeholder="0">
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('') || '<div style="color:var(--text3);font-size:13px;padding:16px;text-align:center">No deployments. Click "+ Add Deployment" to begin.</div>';
+}
+
+// ─── DATA MUTATIONS ───────────────────────────────────────────
+function updateRegionField(code, field, value) {
+  data.regions[code][field] = value;
+  renderSidebar();
+}
+
+function updateDep(code, di, field, value) {
+  data.regions[code].deployments[di][field] = value;
+}
+
+function updateDepModule(code, di, module, value) {
+  data.regions[code].deployments[di].modules[module] = value;
+}
+
+function addDeployment(code) {
+  const idx = data.regions[code].deployments.length + 1;
+  const codeUp = code.toUpperCase().slice(0,2);
+  data.regions[code].deployments.push({
+    instance: `TSP-${codeUp}-PROD-0${idx}`, type: 'Hosted', version: '2.5', users: 0, backup: 'AAG', cti: 1,
+    modules: Object.fromEntries(MODULES.map(m => [m.key, 0]))
+  });
+  document.getElementById('dep-list-'+code).innerHTML = renderDeploymentList(code);
+}
+
+function removeDeployment(code, di) {
+  if (data.regions[code].deployments.length <= 1 && !confirm('Remove the only deployment?')) return;
+  data.regions[code].deployments.splice(di, 1);
+  document.getElementById('dep-list-'+code).innerHTML = renderDeploymentList(code);
+}
+
+function deleteRegion(code) {
+  if (!confirm(`Delete ${data.regions[code].name}? This cannot be undone.`)) return;
+  delete data.regions[code];
+  editingRegion = null;
+  switchView('global');
+}
+
+// ─── ADD REGION MODAL ─────────────────────────────────────────
+function openAddRegion() {
+  document.getElementById('modal-overlay').style.display = 'flex';
+}
+function closeModal() {
+  document.getElementById('modal-overlay').style.display = 'none';
+}
+function addRegion() {
+  const name = document.getElementById('new-country').value.trim();
+  const flag = document.getElementById('new-flag').value.trim() || '🌍';
+  const users = parseInt(document.getElementById('new-users').value) || 0;
+  if (!name) { alert('Please enter a country name'); return; }
+
+  const code = name.toLowerCase().replace(/[^a-z]/g,'').slice(0,4) + '_' + Date.now();
+  const colors = ['#4f8ef7','#f06060','#2ec4a0','#f5a623','#9b7af5','#5bbf72','#f06fa0','#5bc4ef','#e8a87c'];
+  const color = colors[Object.keys(data.regions).length % colors.length];
+
+  data.regions[code] = {
+    name, flag, code, totalUsers: users, color,
+    regionalModules: [],
+    deployments: [{
+      instance: `TSP-${name.slice(0,2).toUpperCase()}-PROD-01`,
+      type: 'Hosted', version: '2.5', users, backup: 'AAG', cti: 1,
+      modules: Object.fromEntries(MODULES.map(m => [m.key, 0]))
+    }]
+  };
+  closeModal();
+  switchView('region', code);
+}
+
+// ─── EXPORT / IMPORT / TEMPLATE ──────────────────────────────
+function exportData() {
+  const payload = { regions: data.regions, roadmapFeatures };
+  download('tsp-platform-data.json', JSON.stringify(payload, null, 2), 'application/json');
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.regions || typeof parsed.regions !== 'object') {
+        alert('Invalid file: missing "regions" object.');
+        input.value = ''; return;
+      }
+      for (const [code, reg] of Object.entries(parsed.regions)) {
+        if (!reg.name || !reg.deployments) {
+          alert(`Invalid region "${code}": missing "name" or "deployments".`);
+          input.value = ''; return;
+        }
+        for (const dep of reg.deployments) {
+          if (!dep.modules) dep.modules = {};
+          MODULES.forEach(m => { if (dep.modules[m.key] === undefined) dep.modules[m.key] = 0; });
+          if (!dep.instance) dep.instance = `TSP-${code.toUpperCase().slice(0,2)}-PROD-01`;
+          if (!dep.backup) dep.backup = 'AAG';
+          if (!dep.cti) dep.cti = 1;
+        }
+        if (!reg.color) reg.color = '#4f8ef7';
+        if (!reg.flag) reg.flag = '🌍';
+        if (!reg.regionalModules) reg.regionalModules = [];
+      }
+      data.regions = parsed.regions;
+      if (Array.isArray(parsed.roadmapFeatures)) {
+        roadmapFeatures = parsed.roadmapFeatures;
+        nextFeatureId = Math.max(0, ...roadmapFeatures.map(f => f.id)) + 1;
+      }
+      activeRegions.clear();
+      editingRegion = null;
+      switchView('global');
+      alert(`Imported successfully — ${Object.keys(data.regions).length} regions loaded.`);
+    } catch (err) {
+      alert('Could not parse JSON: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function downloadTemplate() {
+  const moduleDefaults = Object.fromEntries(MODULES.map(m => [m.key, 0]));
+  const template = {
+    "_readme": "Fill in your region data below. Duplicate the REGION_CODE block for each region. Remove any _comment keys — they are for guidance only.",
+    "_valid_versions": ["1.3","1.5","2.1","2.3","2.4","2.5"],
+    "_valid_backup": ["AAG","Replication"],
+    "_valid_deployment_type": ["Hosted","OnPremise"],
+    "_valid_module_keys": MODULES.map(m => `${m.key}  (${m.label})`),
+    "_valid_categories": ["Product - Software","Product - Hardware","Product - Data","Engineering","Innovation"],
+    "_valid_fy": ["FY26","FY27","FY28"],
+    "_valid_status": ["planned","in_progress","complete"],
+    regions: {
+      "REGION_CODE": {
+        name: "Country Name",
+        flag: "🌍",
+        code: "REGION_CODE",
+        totalUsers: 0,
+        color: "#4f8ef7",
+        regionalModules: [
+          { name: "App Name", desc: "Description of this region-specific application" }
+        ],
+        deployments: [
+          {
+            instance: "TSP-XX-PROD-01",
+            type: "Hosted",
+            version: "2.5",
+            users: 0,
+            backup: "AAG",
+            cti: 1,
+            modules: { ...moduleDefaults }
+          }
+        ]
+      }
+    },
+    roadmapFeatures: [
+      {
+        id: 1,
+        name: "Feature Name",
+        desc: "Optional description",
+        module: "arc",
+        fy: "FY26",
+        regions: ["REGION_CODE"],
+        status: "planned",
+        category: "Product - Software"
+      }
+    ]
+  };
+  download('tsp-platform-template.json', JSON.stringify(template, null, 2), 'application/json');
+}
+
+function download(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+// ─── CHART HELPERS ────────────────────────────────────────────
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ─── MODULE DETAIL ────────────────────────────────────────────
+const MODULE_DETAILS = {
+  arc: {
+    title: 'ARC — Alarm Response Centre',
+    body: `<strong style="color:var(--accent)">Mandatory module.</strong> The ARC is the heart of the TSP platform — the operational centre where alarm calls raised by service users' devices are received and handled by operators. All other platform components ultimately serve or support this function. Operators use the ARC interface to view incoming alarm events, assess the situation, and initiate an appropriate response. Every deployment must include the ARC.`
+  },
+  service_manager: {
+    title: 'Service Manager',
+    body: `<strong style="color:var(--accent)">Mandatory module.</strong> The central operational management hub. Contains four key sub-systems: <strong>Stock Control</strong> (managing physical device inventory), <strong>Incident Response Management</strong> (creating and tracking cases arising from alarm calls), <strong>Onboarding &amp; Referrals</strong> (registering new service users and managing referral workflows), and <strong>Contact Management</strong> (maintaining records of service users, carers, and next-of-kin). Service Manager is the primary data store for the platform.`
+  },
+  tsp_portal: {
+    title: 'TSP Portal',
+    body: `<strong style="color:var(--teal)">Optional module.</strong> A customer-facing web portal that provides access to the same core services as Service Manager, but designed for end-customers to maintain their own data — personal details, emergency contacts, device preferences, and care preferences. Acts as a self-service interface that reduces administrative burden on care providers while keeping records current.`
+  },
+  proactive: {
+    title: 'Proactive Service',
+    body: `<strong style="color:var(--teal)">Optional module.</strong> Enables outbound campaign management — allowing operators or automated workflows to proactively contact service users rather than waiting for an alarm call. Used for welfare checks, device testing campaigns, scheduled follow-ups, and proactive health monitoring outreach. Particularly valuable for high-risk or recently discharged service users.`
+  },
+  service_hooks: {
+    title: 'Service Hooks',
+    body: `<strong style="color:var(--purple)">Optional integration module.</strong> An event subscription system that allows specific platform events to be routed to external HTTP endpoints in real time. Organisations can subscribe to events such as alarm received, case created, or service user updated — and push that data to their own systems (CRM, BI tools, third-party care platforms). Enables the TSP platform to act as a data source for broader enterprise ecosystems.`
+  },
+  notifications: {
+    title: 'Notifications',
+    body: `<strong style="color:var(--teal)">Optional module.</strong> A dedicated SMS management system for sending automated or manually triggered text messages to service users, carers, and next-of-kin. Used for alarm confirmations, appointment reminders, welfare check responses, and status updates. Integrates with Service Manager and Proactive Service to send messages as part of workflows.`
+  },
+  ies: {
+    title: 'IES — API Gateway',
+    body: `<strong style="color:var(--purple)">Integration module.</strong> The current API gateway for the TSP platform, providing controlled external access to the Service Manager API (SM API). Handles authentication, authorisation, rate limiting, and request routing. Any external system or third-party integration that needs to read or write to Service Manager does so via IES. Critical for partner integrations, mobile apps, and custom customer portals.`
+  },
+  bulk_importer: {
+    title: 'Bulk Importer',
+    body: `<strong style="color:var(--teal)">Optional module.</strong> A data ingestion tool allowing large volumes of records to be uploaded into Service Manager via structured file imports. Supports bulk loading of stock/device records, service user referrals, contact data, and configuration. Primarily used during initial platform onboarding, regional rollouts, or when migrating from legacy systems.`
+  },
+  wallboards: {
+    title: 'Wallboards',
+    body: `<strong style="color:var(--teal)">Optional module.</strong> Provides real-time and near-real-time visual dashboards for ARC managers, typically displayed on large screens in the operations centre. Shows alarm handling KPIs such as calls waiting, average response time, operator availability, and call volume trends. Data is sourced from the Tunstall Data Platform and refreshed continuously throughout the shift.`
+  },
+  tdp: {
+    title: 'Tunstall Data Platform (TDP)',
+    body: `<strong style="color:var(--amber)">Infrastructure component.</strong> A data aggregation platform that collects and centralises data from all TSP platform sources — Service Manager, the ARC, DMP device health signals, and external feeds. Acts as the analytical backbone of the platform, powering Wallboards, business intelligence reports, cross-region performance comparisons, and long-term trend analysis. Supports both operational and strategic decision-making.`
+  },
+  dmp: {
+    title: 'DMP — Device Management Platform',
+    body: `<strong style="color:var(--amber)">Infrastructure component.</strong> The configuration and monitoring platform for the physical alarm devices (such as the Lifeline Digital) installed with service users. Operators use DMP to provision new devices, push firmware updates, and manage device settings. The DMP also continuously reports device health and connectivity status to the Tunstall Data Platform, enabling proactive fault detection before a device fails in the field.`
+  },
+  devices: {
+    title: 'Alarm Devices (e.g. Lifeline Digital)',
+    body: `<strong style="color:#f06060">Field hardware.</strong> The physical telecare devices installed in service users' homes. When activated — either by the user pressing a button, by an automatic fall sensor, or by a health monitoring trigger — the device raises an alarm call that routes through the telephony infrastructure (CTI servers) into the ARC. Device telemetry and health data flows back to DMP and TDP for monitoring.`
+  },
+  identity: {
+    title: 'Identity — Authentication System',
+    body: `<strong style="color:#e879a0">Optional module.</strong> Centralised authentication and user account management for the TSP platform. Stores and manages user account credentials, roles, and permissions across all connected modules. Provides single sign-on (SSO) capability so operators, administrators, and portal users authenticate once and access all permitted platform areas without re-entering credentials. Acts as the trust authority for the platform — every module that needs to verify a user's identity or enforce access control defers to Identity.`
+  }
+};
+
+function showModuleDetail(key) {
+  const detail = MODULE_DETAILS[key];
+  if (!detail) return;
+  const panel = document.getElementById('module-detail-panel');
+  document.getElementById('detail-title').textContent = detail.title;
+  document.getElementById('detail-body').innerHTML = detail.body;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── ROADMAP DATA ─────────────────────────────────────────────
+let roadmapFeatures = [
+  { id: 1, name: 'Ready Not Ready', desc: 'Operator availability toggle with automatic call routing adjustment', module: 'arc', fy: 'FY26', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'in_progress', category: 'Product - Software' },
+  { id: 2, name: 'Life Line Digital Core', desc: 'LifeLine Digital Core', module: 'tsp_portal', fy: 'FY26', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'in_progress', category: 'Product - Hardware' },
+  { id: 3, name: '.net 10 Core Upgrade', desc: 'Upgrade all .net core repos to .net 10', module: 'identity', fy: 'FY26', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'in_progress', category: 'Engineering' },
+  { id: 4, name: 'Friends & Family App', desc: 'Full localisation of ARC interface for non-English operators', module: 'service_manager', fy: 'FY27', regions: ['es','fr','de','nl'], status: 'planned', category: 'Product - Software' },
+  { id: 5, name: 'Data Insight Services', desc: 'Data insight services available', module: 'tdp', fy: 'FY27', regions: ['uk','au'], status: 'planned', category: 'Product - Data' },
+  { id: 6, name: 'Activity Monitoring MVP', desc: 'Activity Monitoring MVP', module: 'tdp', fy: 'FY26', regions: ['uk','es','se'], status: 'planned', category: 'Product - Data' },
+  { id: 7, name: 'Integration Layer into TSP', desc: 'Business process APIs available', module: 'service_manager', fy: 'FY27', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Software' },
+  { id: 8, name: 'AI Call Handling Assistant', desc: 'AI-assisted call handling for operators during alarm response', module: 'arc', fy: 'FY28', regions: ['uk','es','se','au'], status: 'planned', category: 'Product - Software' },
+  { id: 9, name: 'Features for Televida Business Process', desc: 'Features for Televida Business Process', module: 'service_manager', fy: 'FY26', regions: ['es'], status: 'planned', category: 'Product - Software' },
+  { id: 10, name: 'DMP Third Party Device Integration', desc: 'Integration of non-Tunstall devices into DMP', module: 'dmp', fy: 'FY28', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Hardware' },
+  { id: 11, name: 'Centralised Audit Service in TSP', desc: 'Centralised audit logging service across TSP platform', module: 'service_manager', fy: 'FY26', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Software' },
+  { id: 12, name: 'Digital Only TSP — Multiple HMP Servers, No CTI', desc: 'Redundancy via multiple HMP servers', module: 'arc', fy: 'FY26', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Software' },
+  { id: 13, name: 'Multiple Alarm-Capable Devices per Dwelling', desc: 'More than one piece of equipment per dwelling', module: 'arc', fy: 'FY27', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Software' },
+  { id: 14, name: 'Intelligent Alarm Queues — Skills-Based Routing', desc: 'Calls provided to agents based on skills and experience', module: 'arc', fy: 'FY27', regions: ['uk','es','de','fr','se','au','fi','dk','nl'], status: 'planned', category: 'Product - Software' }
+];
+let nextFeatureId = 15;
+let editingFeatureId = null;
+
+let activeFYs = new Set(['FY26','FY27','FY28']);
+let activeCategories = new Set(['Product - Software','Product - Hardware','Product - Data','Engineering','Innovation']);
+let activeRegions = new Set();  // populated on first render
+
+// ─── ROADMAP RENDER ───────────────────────────────────────────
+function renderRoadmap() {
+  // Populate active regions from current data if empty
+  if (activeRegions.size === 0) {
+    Object.keys(data.regions).forEach(c => activeRegions.add(c));
+  }
+
+  // Region filter buttons
+  const rfContainer = document.getElementById('region-filters');
+  rfContainer.innerHTML = Object.entries(data.regions).map(([code, reg]) => `
+    <button class="region-filter-btn ${activeRegions.has(code)?'active':''}"
+      data-code="${code}" onclick="toggleRegionFilter(this,'${code}')">
+      <span style="font-size:13px">${reg.flag}</span>${reg.name}
+    </button>
+  `).join('');
+
+  // Compute filtered features
+  const filtered = roadmapFeatures.filter(f =>
+    activeFYs.has(f.fy) &&
+    activeCategories.has(f.category || 'Product') &&
+    f.regions.some(r => activeRegions.has(r))
+  );
+
+  // Summary stats
+  const totalUsers = getTotalUsers();
+  const affectedUsers = getAffectedUsers(filtered);
+  const byFY = {};
+  ['FY26','FY27','FY28'].forEach(fy => byFY[fy] = filtered.filter(f => f.fy === fy).length);
+  const inProgress = filtered.filter(f => f.status === 'in_progress').length;
+
+  document.getElementById('roadmap-stats').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Visible Features</div>
+      <div class="stat-value" style="color:var(--accent)">${filtered.length}</div>
+      <div class="stat-sub">Matching current filters</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">In Progress</div>
+      <div class="stat-value" style="color:var(--amber)">${inProgress}</div>
+      <div class="stat-sub">Active development</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Affected Service Users</div>
+      <div class="stat-value" style="color:var(--teal)">${fmt(affectedUsers)}</div>
+      <div class="stat-sub">${pct(affectedUsers, totalUsers)}% of global users</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Requesting Regions</div>
+      <div class="stat-value" style="color:var(--purple)">${countUniqueRegions(filtered)}</div>
+      <div class="stat-sub">Across filtered features</div>
+    </div>
+  `;
+
+  // Board — columns per FY (only active FYs)
+  const fyList = ['FY26','FY27','FY28'].filter(fy => activeFYs.has(fy));
+  const FY_COLORS = { FY26: '#4f8ef7', FY27: '#2ec4a0', FY28: '#9b7af5' };
+
+  const board = document.getElementById('roadmap-board');
+  if (fyList.length === 0) {
+    board.innerHTML = '<div style="color:var(--text3);text-align:center;padding:40px;font-size:13px">No planning periods selected.</div>';
+    return;
+  }
+
+  board.innerHTML = `
+    <div style="display:flex;gap:14px;align-items:flex-start">
+      ${fyList.map(fy => {
+        const fyFeats = filtered.filter(f => f.fy === fy);
+        const fyUsers = getAffectedUsers(fyFeats);
+        return `
+          <div class="fy-column">
+            <div class="fy-column-header" style="border-top:2px solid ${FY_COLORS[fy]}">
+              <span>${fy}</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${fyFeats.length} feature${fyFeats.length!==1?'s':''}</span>
+            </div>
+            <div class="fy-column-body">
+              ${fyFeats.length === 0
+                ? `<div style="color:var(--text3);font-size:12px;text-align:center;padding:20px 0">No features match filters</div>`
+                : fyFeats.map(f => renderFeatureCard(f)).join('')
+              }
+              ${fyFeats.length > 0 ? `
+                <div class="users-summary-bar">
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);white-space:nowrap">${fmt(fyUsers)} users</span>
+                  <div class="ubar-track"><div class="ubar-fill" style="width:${pct(fyUsers, getTotalUsers())}%;background:${FY_COLORS[fy]}"></div></div>
+                  <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${pct(fyUsers,getTotalUsers())}%</span>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderFeatureCard(f) {
+  const mod = MODULES.find(m => m.key === f.module) || { label: f.module, color: '#888' };
+  const regions = f.regions.map(r => data.regions[r]).filter(Boolean);
+  const affectedUsers = f.regions.reduce((s, r) => s + (data.regions[r]?.totalUsers || 0), 0);
+  const totalUsers = getTotalUsers();
+  const statusLabels = { planned: 'Planned', in_progress: 'In Progress', complete: 'Complete' };
+  const catColors = {
+    'Product - Software': '#4f8ef7',
+    'Product - Hardware': '#2ec4a0',
+    'Product - Data':     '#5bc4ef',
+    'Engineering':        '#f5a623',
+    'Innovation':         '#9b7af5'
+  };
+  const cat = f.category || 'Product';
+  return `
+    <div class="feature-card" style="border-left-color:${mod.color}" onclick="editFeature(${f.id})">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:4px">
+        <div class="feat-name">${f.name}</div>
+        <span style="display:flex;align-items:center;gap:4px;flex-shrink:0;margin-top:2px">
+          <span class="status-dot status-${f.status}"></span>
+          <span style="font-family:var(--font-mono);font-size:9px;color:var(--text3)">${statusLabels[f.status]}</span>
+        </span>
+      </div>
+      <div style="display:flex;align-items:center;gap:5px;margin-bottom:5px;flex-wrap:wrap">
+        <span class="feat-module-badge" style="color:${mod.color};border-color:${mod.color}44;background:${mod.color}11">${mod.label}</span>
+        <span style="font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;border:1px solid ${catColors[cat]}44;background:${catColors[cat]}11;color:${catColors[cat]}">${cat}</span>
+      </div>
+      ${f.desc ? `<div class="feat-desc-text">${f.desc}</div>` : ''}
+      <div class="feat-regions" style="margin-top:6px">
+        ${regions.map(r => `<span class="feat-region-chip">${r.flag} ${r.name}</span>`).join('')}
+      </div>
+      <div class="users-summary-bar">
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3);white-space:nowrap">${fmt(affectedUsers)} users</span>
+        <div class="ubar-track"><div class="ubar-fill" style="width:${pct(affectedUsers, totalUsers)}%;background:${mod.color}"></div></div>
+        <span style="font-family:var(--font-mono);font-size:10px;color:var(--text3)">${pct(affectedUsers,totalUsers)}%</span>
+      </div>
+    </div>
+  `;
+}
+
+function getAffectedUsers(features) {
+  const seen = new Set();
+  let total = 0;
+  for (const f of features) {
+    for (const r of f.regions) {
+      if (!seen.has(r) && activeRegions.has(r)) {
+        seen.add(r);
+        total += data.regions[r]?.totalUsers || 0;
+      }
+    }
+  }
+  return total;
+}
+
+function countUniqueRegions(features) {
+  const s = new Set();
+  features.forEach(f => f.regions.forEach(r => { if (activeRegions.has(r)) s.add(r); }));
+  return s.size;
+}
+
+function toggleFY(btn) {
+  const fy = btn.dataset.fy;
+  if (activeFYs.has(fy)) { activeFYs.delete(fy); btn.classList.remove('active'); }
+  else { activeFYs.add(fy); btn.classList.add('active'); }
+  renderRoadmap();
+}
+
+function toggleCat(btn) {
+  const cat = btn.dataset.cat;
+  const all = ['Product - Software','Product - Hardware','Product - Data','Engineering','Innovation'];
+  const allActive = activeCategories.size === all.length;
+  const onlyThis = activeCategories.size === 1 && activeCategories.has(cat);
+  if (onlyThis) {
+    all.forEach(c => activeCategories.add(c));
+  } else if (allActive || !activeCategories.has(cat)) {
+    activeCategories.clear();
+    activeCategories.add(cat);
+  } else {
+    activeCategories.delete(cat);
+    if (activeCategories.size === 0) all.forEach(c => activeCategories.add(c));
+  }
+  document.querySelectorAll('[data-cat]').forEach(b => {
+    b.classList.toggle('active', activeCategories.has(b.dataset.cat));
+  });
+  renderRoadmap();
+}
+
+function toggleRegionFilter(btn, code) {
+  const allCodes = Object.keys(data.regions);
+  const currentlyActive = [...activeRegions];
+  const allActive = currentlyActive.length === allCodes.length;
+  const onlyThisActive = currentlyActive.length === 1 && activeRegions.has(code);
+
+  if (onlyThisActive) {
+    // Already isolated to this one — click again to restore all
+    allCodes.forEach(c => activeRegions.add(c));
+  } else if (allActive || !activeRegions.has(code)) {
+    // All were active, or this one was off — isolate to just this one
+    activeRegions.clear();
+    activeRegions.add(code);
+  } else {
+    // Some subset active — toggle this one off/on normally
+    activeRegions.delete(code);
+    if (activeRegions.size === 0) {
+      // Don't allow empty — restore all
+      allCodes.forEach(c => activeRegions.add(c));
+    }
+  }
+  renderRoadmap();
+}
+
+// ─── FEATURE MODAL ────────────────────────────────────────────
+function openFeatureModal(id) {
+  editingFeatureId = id || null;
+
+  // Populate module dropdown
+  document.getElementById('feat-module').innerHTML = MODULES.map(m =>
+    `<option value="${m.key}">${m.label}</option>`
+  ).join('');
+
+  // Populate region checkboxes
+  document.getElementById('feat-regions').innerHTML = Object.entries(data.regions).map(([code, reg]) =>
+    `<div class="region-check-item" id="rc-${code}" onclick="toggleRegionCheck('${code}')">
+      <span style="font-size:14px">${reg.flag}</span>
+      <span>${reg.name}</span>
+    </div>`
+  ).join('');
+
+  if (id) {
+    const f = roadmapFeatures.find(f => f.id === id);
+    document.getElementById('feature-modal-title').textContent = 'Edit Feature';
+    document.getElementById('feat-name').value = f.name;
+    document.getElementById('feat-desc').value = f.desc || '';
+    document.getElementById('feat-category').value = f.category || 'Product';
+    document.getElementById('feat-module').value = f.module;
+    document.getElementById('feat-fy').value = f.fy;
+    document.getElementById('feat-status').value = f.status;
+    document.getElementById('feat-delete-btn').style.display = 'block';
+    f.regions.forEach(r => {
+      const el = document.getElementById('rc-'+r);
+      if (el) el.classList.add('checked');
+    });
+  } else {
+    document.getElementById('feature-modal-title').textContent = 'Add Feature';
+    document.getElementById('feat-name').value = '';
+    document.getElementById('feat-desc').value = '';
+    document.getElementById('feat-module').value = MODULES[0].key;
+    document.getElementById('feat-fy').value = 'FY26';
+    document.getElementById('feat-status').value = 'planned';
+    document.getElementById('feat-delete-btn').style.display = 'none';
+  }
+
+  document.getElementById('feature-modal-overlay').style.display = 'flex';
+}
+
+function editFeature(id) { openFeatureModal(id); }
+
+function closeFeatureModal() {
+  document.getElementById('feature-modal-overlay').style.display = 'none';
+}
+
+function toggleRegionCheck(code) {
+  const el = document.getElementById('rc-'+code);
+  el.classList.toggle('checked');
+}
+
+function saveFeature() {
+  const name = document.getElementById('feat-name').value.trim();
+  if (!name) { alert('Please enter a feature name.'); return; }
+  const checkedRegions = Object.keys(data.regions).filter(c => document.getElementById('rc-'+c)?.classList.contains('checked'));
+  if (checkedRegions.length === 0) { alert('Please select at least one region.'); return; }
+
+  const feature = {
+    id: editingFeatureId || nextFeatureId++,
+    name,
+    desc: document.getElementById('feat-desc').value.trim(),
+    category: document.getElementById('feat-category').value,
+    module: document.getElementById('feat-module').value,
+    fy: document.getElementById('feat-fy').value,
+    regions: checkedRegions,
+    status: document.getElementById('feat-status').value
+  };
+
+  if (editingFeatureId) {
+    const idx = roadmapFeatures.findIndex(f => f.id === editingFeatureId);
+    roadmapFeatures[idx] = feature;
+  } else {
+    roadmapFeatures.push(feature);
+  }
+
+  closeFeatureModal();
+  renderRoadmap();
+}
+
+function deleteFeature() {
+  if (!confirm('Delete this feature?')) return;
+  roadmapFeatures = roadmapFeatures.filter(f => f.id !== editingFeatureId);
+  closeFeatureModal();
+  renderRoadmap();
+}
+
+// ─── RELEASES ─────────────────────────────────────────────────
+const RELEASE_DATA = {
+  baseline: { label: 'TSP 1.5', total: 1000, features: 0, modules: {} },
+  releases: [
+    { label: 'v1.6', modules: { PNC:5, 'Proactive Services':2, 'Service Manager':2, 'TSP Portal':1 } },
+    { label: 'v2.0', modules: { PNC:5, Data:1, Identity:1, 'Proactive Services':1, 'Service Manager':8, 'TSP Portal':1 } },
+    { label: 'v2.1', modules: { PNC:3, 'Proactive Services':3, 'Service Manager':5, 'TSP Portal':4 } },
+    { label: 'v2.1.3', modules: { Engineering:3, Identity:1, PNC:6, 'Proactive Services':2, 'Service Manager':3, 'TSP Portal':1 } },
+    { label: 'v2.2', modules: { Portal:1, 'Service Manager':4 } },
+    { label: 'v2.3', modules: { PNC:6, 'Service Manager':3 } },
+    { label: 'v2.4', modules: { 'Bulk Importer':1, Engineering:5, Identity:1, PNC:4, 'Service Manager':3 } },
+    { label: 'v2.5', modules: { 'Bulk Importer':2, Data:1, Engineering:2, Gateway:2, Identity:1, PNC:3, Portal:5, 'Service Manager':3, 'SMS Proxy':1, Notifications:1 } },
+    { label: 'v2.6', modules: { Data:7, Engineering:2, Identity:2, PNC:7, 'Service Manager':4, 'TSP Portal':1, Wallboards:1 } }
+  ]
+};
+
+const MODULE_COLORS_REL = {
+  'PNC':              '#4f8ef7',
+  'Service Manager':  '#2ec4a0',
+  'Engineering':      '#f5a623',
+  'Proactive Services':'#9b7af5',
+  'TSP Portal':       '#f06060',
+  'Identity':         '#e879a0',
+  'Data':             '#5bc4ef',
+  'Portal':           '#5bbf72',
+  'Bulk Importer':    '#f06fa0',
+  'Gateway':          '#e8a87c',
+  'Engineering':      '#f5a623',
+  'SMS Proxy':        '#98d98e',
+  'Notifications':    '#c4a0f5',
+  'Wallboards':       '#ffd166'
+};
+
+function renderReleases() {
+  // Build cumulative data
+  let cumulative = RELEASE_DATA.baseline.total;
+  const steps = [];
+  steps.push({ label: RELEASE_DATA.baseline.label, cumulative, added: 0, modules: {}, isBaseline: true });
+  for (const rel of RELEASE_DATA.releases) {
+    const added = Object.values(rel.modules).reduce((s,v) => s+v, 0);
+    cumulative += added;
+    steps.push({ label: rel.label, cumulative, added, modules: rel.modules, isBaseline: false });
+  }
+
+  // Collect all unique modules across all releases
+  const allModules = [...new Set(RELEASE_DATA.releases.flatMap(r => Object.keys(r.modules)))].sort();
+
+  // Legend
+  document.getElementById('releases-legend').innerHTML = allModules.map(m => `
+    <span style="display:flex;align-items:center;gap:5px;font-size:11px;font-family:var(--font-mono);color:var(--text2)">
+      <span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:${MODULE_COLORS_REL[m]||'#888'}"></span>${m}
+    </span>
+  `).join('');
+
+  // SVG staircase
+  const svgEl = document.getElementById('releases-svg');
+  const W = 960, padL = 68, padR = 20, padT = 40, padB = 64;
+  const chartW = W - padL - padR;
+  const chartH = 420;
+  const H = chartH + padT + padB;
+  svgEl.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svgEl.style.height = H + 'px';
+
+  // Scale: starts at 500, zooms into the 1000-1150 range for visibility
+  const minVal = 500;
+  const breakVal = 1000; // axis break point
+  const maxVal = 1155;
+  const lowerFrac = 0.25; // 500-1000 gets 25% of chart height
+  const upperFrac = 0.75; // 1000-1155 gets 75% of chart height
+
+  // Two-segment non-linear scale: 500→1000 compressed, 1000→1155 expanded
+  const yScale = v => {
+    const bottom = padT + chartH;
+    if (v <= breakVal) {
+      // Lower segment: maps [500,1000] to bottom lowerFrac of chart
+      const seg = lowerFrac * chartH;
+      return bottom - ((v - minVal) / (breakVal - minVal)) * seg;
+    } else {
+      // Upper segment: maps [1000,1155] to top upperFrac of chart
+      const seg = upperFrac * chartH;
+      const breakY = bottom - lowerFrac * chartH;
+      return breakY - ((v - breakVal) / (maxVal - breakVal)) * seg;
+    }
+  };
+  // Clamp values below minVal to bottom of chart
+  const yScaleClamped = v => Math.min(yScale(Math.max(v, minVal)), padT + chartH);
+
+  const stepW = chartW / steps.length;
+  const gap = 6; // gap between columns
+
+  let svgContent = `<defs></defs>`;
+
+  // Alternating column background bands (full chart height)
+  for (let i = 0; i < steps.length; i++) {
+    const x = padL + i * stepW;
+    const shade = i % 2 === 0 ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0)';
+    svgContent += `<rect x="${x}" y="${padT}" width="${stepW}" height="${chartH}" fill="${shade}"/>`;
+  }
+
+  // Y-axis gridlines & labels — 500, 1000, then 1050, 1100, 1150
+  const yTicks = [500, 1000, 1050, 1100, 1150];
+  for (const t of yTicks) {
+    if (t > maxVal) continue;
+    const y = yScale(t);
+    const isMajor = t === 500 || t === 1000;
+    svgContent += `<line x1="${padL}" y1="${y}" x2="${W-padR}" y2="${y}" stroke="${isMajor ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)'}" stroke-width="${isMajor ? 1 : 0.75}" ${isMajor ? '' : 'stroke-dasharray="4 3"'}/>`;
+    svgContent += `<text x="${padL-7}" y="${y}" text-anchor="end" dominant-baseline="central" font-family="DM Mono,monospace" font-size="${isMajor ? 10 : 9}" fill="${isMajor ? '#9098b0' : '#a0a8c0'}">${t.toLocaleString()}</text>`;
+  }
+
+  // Axis break symbol at y=1000 to indicate scale discontinuity
+  const breakY = yScale(1000);
+  const bx = padL - 18;
+  svgContent += `<line x1="${bx}" y1="${breakY-5}" x2="${bx+6}" y2="${breakY+5}" stroke="#a0a8c0" stroke-width="1.5" stroke-linecap="round"/>`;
+  svgContent += `<line x1="${bx+5}" y1="${breakY-5}" x2="${bx+11}" y2="${breakY+5}" stroke="#a0a8c0" stroke-width="1.5" stroke-linecap="round"/>`;
+  // Scale break label
+  svgContent += `<text x="${padL-7}" y="${breakY+18}" text-anchor="end" font-family="DM Mono,monospace" font-size="8" fill="#a0a8c0">↑ ×3</text>`;
+
+  // Axis line
+  svgContent += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+chartH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+  svgContent += `<line x1="${padL}" y1="${padT+chartH}" x2="${W-padR}" y2="${padT+chartH}" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>`;
+
+  // Column colours for alternating distinction
+  const colAccents = ['rgba(79,142,247,0.06)','rgba(46,196,160,0.06)','rgba(155,122,245,0.06)','rgba(245,166,35,0.06)','rgba(240,96,96,0.06)','rgba(91,191,114,0.06)','rgba(91,196,239,0.06)','rgba(232,121,160,0.06)','rgba(232,168,124,0.06)','rgba(152,217,142,0.06)'];
+
+  // Draw staircase steps — stacked module segments for added portion
+  for (let i = 0; i < steps.length; i++) {
+    const step = steps[i];
+    const x = padL + i * stepW + gap/2;
+    const w = stepW - gap;
+    const topY = yScaleClamped(step.cumulative);
+    const prevCumulative = i === 0 ? 0 : steps[i-1].cumulative;
+    const baseY = yScaleClamped(prevCumulative);
+    const chartBottom = padT + chartH;
+
+    // Column accent background
+    svgContent += `<rect x="${x}" y="${padT}" width="${w}" height="${chartH}" fill="${colAccents[i % colAccents.length]}" rx="3"/>`;
+
+    if (step.isBaseline) {
+      // Baseline block — solid blue from 500 to 1000
+      const top = yScaleClamped(1000);
+      const bottom = chartBottom;
+      svgContent += `<rect x="${x}" y="${top}" width="${w}" height="${bottom - top}" fill="#1a2d4a" stroke="#4f8ef7" stroke-width="1" rx="3"/>`;
+      // Label inside baseline block
+      svgContent += `<text x="${x+w/2}" y="${(top+bottom)/2}" text-anchor="middle" dominant-baseline="central" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#4f8ef7">1,000</text>`;
+      svgContent += `<text x="${x+w/2}" y="${(top+bottom)/2+14}" text-anchor="middle" dominant-baseline="central" font-family="DM Mono,monospace" font-size="9" fill="#4f8ef766">baseline</text>`;
+      // Dashed fill indicator below 500 cutoff
+      svgContent += `<text x="${x+w/2}" y="${padT+chartH+14}" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#4f8ef7">${step.label}</text>`;
+    } else {
+      // Grey block for carried-over features (from 500 up to prevCumulative)
+      const greyTop = yScaleClamped(prevCumulative);
+      svgContent += `<rect x="${x}" y="${greyTop}" width="${w}" height="${chartBottom - greyTop}" fill="#1b1f2b" stroke="rgba(255,255,255,0.06)" stroke-width="0.5" rx="3"/>`;
+
+      // Stacked coloured segments for new features in this release
+      if (step.added > 0) {
+        const mods = Object.entries(step.modules);
+        let stackBottom = prevCumulative;
+        for (const [mod, count] of mods) {
+          const segTop = yScaleClamped(stackBottom + count);
+          const segBot = yScaleClamped(stackBottom);
+          const color = MODULE_COLORS_REL[mod] || '#888';
+          const segH = segBot - segTop;
+          svgContent += `<rect x="${x}" y="${segTop}" width="${w}" height="${segH}" fill="${color}" opacity="0.9" rx="2"/>`;
+          // Label inside segment if tall enough
+          if (segH > 16) {
+            svgContent += `<text x="${x+w/2}" y="${segTop + segH/2}" text-anchor="middle" dominant-baseline="central" font-family="DM Mono,monospace" font-size="8" fill="#fff" opacity="0.95" font-weight="500">${mod} (${count})</text>`;
+          } else if (segH > 9) {
+            svgContent += `<text x="${x+w/2}" y="${segTop + segH/2}" text-anchor="middle" dominant-baseline="central" font-family="DM Mono,monospace" font-size="7" fill="#fff" opacity="0.9">${count}</text>`;
+          }
+          stackBottom += count;
+        }
+
+        // Bright top border on the coloured additions to make the step edge pop
+        svgContent += `<line x1="${x}" y1="${topY}" x2="${x+w}" y2="${topY}" stroke="#e8eaf0" stroke-width="1.5" opacity="0.6"/>`;
+
+        // +N label above
+        svgContent += `<text x="${x+w/2}" y="${topY-10}" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#e8eaf0" font-weight="500">+${step.added}</text>`;
+      }
+
+      // Horizontal step connector from previous top
+      if (i > 0) {
+        const prevX = padL + (i-1) * stepW + stepW - gap/2;
+        svgContent += `<line x1="${prevX}" y1="${yScaleClamped(prevCumulative)}" x2="${x}" y2="${yScaleClamped(prevCumulative)}" stroke="rgba(255,255,255,0.2)" stroke-width="1" stroke-dasharray="3 2"/>`;
+      }
+
+      // Cumulative total
+      svgContent += `<text x="${x+w/2}" y="${topY-22}" text-anchor="middle" font-family="Syne,sans-serif" font-size="10" font-weight="600" fill="#e8eaf0">${step.cumulative.toLocaleString()}</text>`;
+
+      // Column border accent (left edge)
+      svgContent += `<line x1="${x}" y1="${padT}" x2="${x}" y2="${chartBottom}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>`;
+
+      // Version label
+      svgContent += `<text x="${x+w/2}" y="${padT+chartH+16}" text-anchor="middle" font-family="Syne,sans-serif" font-size="11" font-weight="600" fill="#a8b0c8">${step.label}</text>`;
+    }
+  }
+
+  // Y-axis label
+  svgContent += `<text x="14" y="${padT + chartH/2}" text-anchor="middle" dominant-baseline="central" font-family="DM Mono,monospace" font-size="10" fill="#a0a8c0" transform="rotate(-90,14,${padT+chartH/2})">Cumulative Features</text>`;
+
+  svgEl.innerHTML = svgContent;
+
+  // Table
+  const tableEl = document.getElementById('releases-table');
+  let tableHTML = `<thead><tr><th>Module</th>`;
+  for (const rel of RELEASE_DATA.releases) {
+    tableHTML += `<th>${rel.label}</th>`;
+  }
+  tableHTML += `<th>Total Added</th></tr></thead><tbody>`;
+
+  for (const mod of allModules) {
+    tableHTML += `<tr><td style="display:flex;align-items:center;gap:7px"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${MODULE_COLORS_REL[mod]||'#888'}"></span>${mod}</td>`;
+    let rowTotal = 0;
+    for (const rel of RELEASE_DATA.releases) {
+      const v = rel.modules[mod] || 0;
+      rowTotal += v;
+      tableHTML += `<td style="font-family:var(--font-mono);color:${v ? 'var(--text)' : 'var(--text3)'}">${v || '—'}</td>`;
+    }
+    tableHTML += `<td style="font-family:var(--font-mono);font-weight:500;color:var(--text)">${rowTotal}</td></tr>`;
+  }
+
+  // Totals row
+  tableHTML += `<tr style="border-top:1px solid var(--border2)"><td style="font-weight:500;color:var(--text)">Total per release</td>`;
+  let grandTotal = 0;
+  for (const rel of RELEASE_DATA.releases) {
+    const t = Object.values(rel.modules).reduce((s,v)=>s+v,0);
+    grandTotal += t;
+    tableHTML += `<td style="font-family:var(--font-mono);font-weight:500;color:var(--accent)">${t}</td>`;
+  }
+  tableHTML += `<td style="font-family:var(--font-mono);font-weight:500;color:var(--accent)">${grandTotal}</td></tr>`;
+  tableHTML += `</tbody>`;
+  tableEl.innerHTML = tableHTML;
+}
+
+// ─── MARKETECTURE REGIONAL MODULES ───────────────────────────
+// ─── MARKETECTURE REGION FILTER ──────────────────────────────
+let mktRegionFilter = null; // null = show all, else region code string
+
+function renderMktRegionFilters() {
+  const el = document.getElementById('mkt-region-filters');
+  if (!el) return;
+  const regions = Object.values(data.regions);
+  let html = `<button class="fy-btn${mktRegionFilter === null ? ' active' : ''}" onclick="setMktRegionFilter(null)">All regions</button>`;
+  regions.forEach(reg => {
+    const active = mktRegionFilter === reg.code ? ' active' : '';
+    html += `<button class="fy-btn${active}" style="${mktRegionFilter === reg.code ? `border-color:${reg.color};color:${reg.color}` : ''}" onclick="setMktRegionFilter('${reg.code}')">${reg.flag} ${reg.name}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+function setMktRegionFilter(code) {
+  mktRegionFilter = code;
+  renderMktRegionFilters();
+  renderMarketectureRegionalModules();
+}
+
+function renderMarketectureRegionalModules() {
+  const container = document.getElementById('mkt-regional-mods');
+  if (!container) return;
+
+  // Collect modules: if filter active, only show that region's modules; else all (deduplicated by name)
+  const allMods = [];
+  for (const reg of Object.values(data.regions)) {
+    if (mktRegionFilter && reg.code !== mktRegionFilter) continue;
+    for (const rm of (reg.regionalModules || [])) {
+      if (rm.name) {
+        if (!mktRegionFilter && allMods.find(m => m.name === rm.name)) continue; // dedup when showing all
+        allMods.push({ ...rm, region: reg });
+      }
+    }
+  }
+
+  if (allMods.length === 0) {
+    container.innerHTML = `<text x="1330" y="280" text-anchor="middle" font-family="DM Mono,monospace" font-size="9" fill="#a0a8c0">No regional modules for this region</text>`;
+    return;
+  }
+
+  const startY = 248;
+  const itemH = 34;
+  const gap = 5;
+  let svg = '';
+  allMods.forEach((mod, i) => {
+    const y = startY + i * (itemH + gap);
+    const regionColor = mod.region.color || '#e879a0';
+    svg += `
+      <rect x="1242" y="${y}" width="176" height="${itemH}" rx="6" fill="#1e1020" stroke="${regionColor}55" stroke-width="1"/>
+      <rect x="1242" y="${y}" width="4" height="${itemH}" rx="3" fill="${regionColor}" opacity="0.8"/>
+      <text x="1256" y="${y + 13}" font-family="Syne,sans-serif" font-size="10" font-weight="600" fill="#f2f4fa">${mod.name}</text>
+      <text x="1256" y="${y + 27}" font-family="DM Mono,monospace" font-size="8" fill="#7a8299">${mod.region.flag} ${mod.region.name}</text>
+    `;
+  });
+  container.innerHTML = svg;
+
+  // Extend column height if many modules
+  const neededH = startY + allMods.length * (itemH + gap) + 20;
+  const col = document.querySelector('#mkt-svg rect[x="1228"][y="104"]');
+  if (col && neededH - 104 > 332) col.setAttribute('height', neededH - 104);
+}
+
+// ─── COLLAPSIBLE SECTIONS ─────────────────────────────────────
+function toggleCollapse(bodyId, chevronId) {
+  const body = document.getElementById(bodyId);
+  const chevron = document.getElementById(chevronId);
+  if (!body) return;
+  const collapsed = body.style.display === 'none';
+  body.style.display = collapsed ? '' : 'none';
+  if (chevron) chevron.style.transform = collapsed ? 'rotate(0deg)' : 'rotate(-90deg)';
+}
+
+// ─── CUSTOMER VALUE STREAM DETAIL ────────────────────────────
+const VSD_COLS = [
+  { key: 'social',    items: [] },
+  { key: 'assess',    items: [
+    { t:'Design Forms', c:'green' },
+    { t:'Schedule Appointments', c:'green' },
+    { t:'Manage Appointment Reminders', c:'green' },
+    { t:'Manage Data Collection', c:'green' },
+    { t:'Arrange Periodic Review', c:'green' },
+    { t:'Manage Services and Technology Outcomes', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'referral',  items: [
+    { t:'Design Forms', c:'green' },
+    { t:'Manage Data Collection', c:'green' },
+    { t:'Manage Batch Imports of Customer Referrals', c:'green' },
+    { t:'Manage Referrals Integration Process', c:'green' },
+    { t:'Manage Pre-Registrations', c:'red' },
+    { t:'Validation of Referrals', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'presc',     items: [
+    { t:'Design Services & Equipment', c:'green' },
+    { t:'Design Surveys / Assessments', c:'green' },
+    { t:'Manage Installation Requests', c:'green' },
+    { t:'Run Reporting', c:'green' },
+    { t:'Fulfil Forms', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'install',   items: [
+    { t:'Manage Inventory', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' },
+    { t:'Manage Scheduling / Routing', c:'green' },
+    { t:'Send Notifications', c:'green' },
+    { t:"Monitor SLA's Compliance", c:'green' },
+    { t:'Fulfil Forms', c:'green' },
+    { t:'Install Equipment', c:'green' },
+    { t:'Update Stock', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'proactive_prog', items: [] },
+  { key: 'reactive',  items: [
+    { t:'Handle of Human / Technical / Environmental Alarms', c:'green' },
+    { t:'Send Events Notification', c:'green' },
+    { t:'Program / Interrogate Devices Remotely', c:'green' },
+    { t:'Manage Incidents / Emergencies', c:'green' },
+    { t:'Monitor Real Time Events SLAs Breach', c:'green' },
+    { t:'Monitor Non-Real Time Events SLAs Breach', c:'green' },
+    { t:'Manage Automatic Calls Distribution (ACD)', c:'green' },
+    { t:'Manage Workflows', c:'green' },
+    { t:'Notify F&F Events', c:'green' },
+    { t:'Manage Integration with External Systems', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' }
+  ]},
+  { key: 'proactive_care', items: [
+    { t:'Manage Conferences / Transferences / Barge in Call Mechanisms', c:'green' },
+    { t:'Manage Service Users Geolocation', c:'green' },
+    { t:'Manage Voice Recordings', c:'green' },
+    { t:'Manage F&F', c:'red' },
+    { t:'Run Reporting', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' }
+  ]},
+  { key: 'responder', items: [
+    { t:'Schedule Agenda Reminders', c:'green' },
+    { t:'Manage Outgoing Call Handling Activity', c:'green' },
+    { t:'Manage Campaigns', c:'green' },
+    { t:'Manage Auto Attended Proactive Services', c:'green' },
+    { t:'Run Reporting', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' }
+  ]},
+  { key: 'review',    items: [
+    { t:'Manage Incidents / Emergencies', c:'green' },
+    { t:'Run Emergencies and Responders Assessment', c:'green' },
+    { t:'Manage Keys Storage / Door Access', c:'green' },
+    { t:'Monitor SLAs Compliance / Breaches', c:'green' },
+    { t:'Appointment Scheduling', c:'green' },
+    { t:'Appointment Reminders', c:'green' },
+    { t:'Manage Data Collection', c:'green' },
+    { t:'Plan Periodic Reviews', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' },
+    { t:'Manage Services and Technology Outcomes', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'equip',     items: [
+    { t:'Manage Requests', c:'green' },
+    { t:'Manage Inventory', c:'green' },
+    { t:'Monitor SLAs Compliance / Breaches', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' },
+    { t:'Manage Scheduling / Routing', c:'green' },
+    { t:'Send Notifications', c:'green' },
+    { t:'Fulfil Forms', c:'green' },
+    { t:'Manage Equipment Allocations / Deallocations', c:'green' },
+    { t:'Update Stocks', c:'green' },
+    { t:'Run Reporting', c:'green' }
+  ]},
+  { key: 'decomm',    items: [
+    { t:'Manage Requests', c:'green' },
+    { t:'Manage Inventory', c:'green' },
+    { t:'Monitor SLAs Compliance / Breaches', c:'green' },
+    { t:'Manage Workforces (WFM)', c:'green' },
+    { t:'Manage Scheduling / Routing', c:'green' },
+    { t:'Send Notifications', c:'green' },
+    { t:'Fulfil Forms', c:'green' },
+    { t:'Manage Equipment Deallocations', c:'green' },
+    { t:'Update Stocks', c:'green' },
+    { t:'Run Reporting', c:'green' },
+    { t:'Data Redaction Management', c:'green' }
+  ]}
+];
+
+function renderVSD() {
+  const tbody = document.getElementById('vsd-tbody');
+  if (!tbody) return;
+  const maxRows = Math.max(...VSD_COLS.map(c => c.items.length));
+  let html = '';
+  for (let r = 0; r < maxRows; r++) {
+    html += '<tr>';
+    for (const col of VSD_COLS) {
+      const item = col.items[r];
+      if (item) {
+        html += `<td class="vsd-cell"><div class="vsd-item ${item.c}">${item.t}</div></td>`;
+      } else {
+        html += '<td class="vsd-cell"></td>';
+      }
+    }
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+}
+
+renderSidebar();
+renderGlobal();
+renderVSD();
+</script>
+</body>
+</html>
