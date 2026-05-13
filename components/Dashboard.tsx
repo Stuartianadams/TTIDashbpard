@@ -106,6 +106,7 @@ export default function Dashboard() {
                   deployments={deployments}
                   modules={modules}
                   onRegionClick={code => switchView('region', code)}
+                  onDataChange={loadData}
                 />
               )}
               {currentView === 'modules' && (

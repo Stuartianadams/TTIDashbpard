@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import StatCard from '@/components/ui/StatCard'
+import ConfirmDialog from '@/components/ui/ConfirmDialog'
 import {
   fmt, pct, CATEGORY_LABELS, CATEGORY_COLORS, FY_COLORS,
   type RoadmapFeature, type Region, type Module,
@@ -26,6 +27,7 @@ export default function RoadmapView({ features, regions, modules, onDataChange }
   const [activeRegions, setActiveRegions] = useState<Set<string>>(new Set(regions.map(r => r.code)))
   const [editingFeature, setEditingFeature] = useState<RoadmapFeature | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   const visible = features.filter(f => {
     if (!activeFYs.has(f.fiscalYear)) return false
@@ -54,6 +56,24 @@ export default function RoadmapView({ features, regions, modules, onDataChange }
     })
   }
 
+  const openCreate = () => {
+    setEditingFeature(null)
+    setIsCreating(true)
+    setShowModal(true)
+  }
+
+  const openEdit = (f: RoadmapFeature) => {
+    setEditingFeature(f)
+    setIsCreating(false)
+    setShowModal(true)
+  }
+
+  const closeModal = () => {
+    setShowModal(false)
+    setEditingFeature(null)
+    setIsCreating(false)
+  }
+
   const affectedUsers = (() => {
     const codes = new Set(visible.flatMap(f => f.regions.map(r => r.region.code)))
     return regions.filter(r => codes.has(r.code)).reduce((s, r) => s + r.totalUsers, 0)
@@ -66,13 +86,14 @@ export default function RoadmapView({ features, regions, modules, onDataChange }
       <div className="card" style={{ marginBottom: 14 }}>
         <div className="section-header">
           <div className="card-title" style={{ marginBottom: 0 }}>Planning Periods</div>
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {FYS.map(fy => (
               <button key={fy} className={`fy-btn${activeFYs.has(fy) ? ' active' : ''}`} onClick={() => toggleFY(fy)}
                 style={activeFYs.has(fy) ? { background: FY_COLORS[fy] + '26', borderColor: FY_COLORS[fy] + '66', color: FY_COLORS[fy] } : {}}>
                 {fy}
               </button>
             ))}
+            <button className="btn sm primary" onClick={openCreate} style={{ marginLeft: 6 }}>+ New Feature</button>
           </div>
         </div>
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -102,7 +123,7 @@ export default function RoadmapView({ features, regions, modules, onDataChange }
               </div>
               <div className="fy-column-body">
                 {fyFeatures.map(f => (
-                  <FeatureCard key={f.id} feature={f} regions={regions} onClick={() => { setEditingFeature(f); setShowModal(true) }} />
+                  <FeatureCard key={f.id} feature={f} regions={regions} onClick={() => openEdit(f)} />
                 ))}
                 {fyFeatures.length === 0 && (
                   <div style={{ color: 'var(--text3)', fontSize: 12, fontFamily: 'var(--font-mono)', padding: '20px 0', textAlign: 'center' }}>
@@ -115,22 +136,13 @@ export default function RoadmapView({ features, regions, modules, onDataChange }
         })}
       </div>
 
-      {showModal && editingFeature && (
+      {showModal && (isCreating || editingFeature) && (
         <FeatureModal
-          feature={editingFeature}
+          feature={isCreating ? null : editingFeature}
           regions={regions}
           modules={modules}
-          onClose={() => { setShowModal(false); setEditingFeature(null) }}
-          onSave={async (updates) => {
-            await fetch(`/api/roadmap/${editingFeature.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(updates),
-            })
-            onDataChange()
-            setShowModal(false)
-            setEditingFeature(null)
-          }}
+          onClose={closeModal}
+          onSaved={() => { closeModal(); onDataChange() }}
         />
       )}
     </>
@@ -180,22 +192,25 @@ function FeatureCard({ feature: f, regions, onClick }: { feature: RoadmapFeature
 }
 
 interface ModalProps {
-  feature: RoadmapFeature
+  feature: RoadmapFeature | null
   regions: Region[]
   modules: Module[]
   onClose: () => void
-  onSave: (updates: Record<string, unknown>) => Promise<void>
+  onSaved: () => void
 }
 
-function FeatureModal({ feature, regions, modules, onClose, onSave }: ModalProps) {
-  const [name, setName] = useState(feature.name)
-  const [description, setDescription] = useState(feature.description)
-  const [status, setStatus] = useState<RoadmapStatus>(feature.status)
-  const [fiscalYear, setFiscalYear] = useState(feature.fiscalYear)
-  const [category, setCategory] = useState<RoadmapCategory>(feature.category)
-  const [moduleId, setModuleId] = useState(feature.module?.key ?? '')
-  const [selectedRegions, setSelectedRegions] = useState(new Set(feature.regions.map(r => r.region.code)))
+function FeatureModal({ feature, regions, modules, onClose, onSaved }: ModalProps) {
+  const [name, setName] = useState(feature?.name ?? '')
+  const [description, setDescription] = useState(feature?.description ?? '')
+  const [status, setStatus] = useState<RoadmapStatus>(feature?.status ?? 'planned')
+  const [fiscalYear, setFiscalYear] = useState<FiscalYear>(feature?.fiscalYear ?? 'FY26')
+  const [category, setCategory] = useState<RoadmapCategory>(feature?.category ?? 'Product_Software')
+  const [moduleId, setModuleId] = useState(feature?.module?.key ?? '')
+  const [selectedRegions, setSelectedRegions] = useState(new Set(feature?.regions.map(r => r.region.code) ?? []))
   const [saving, setSaving] = useState(false)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+
+  const isEdit = feature !== null
 
   const toggleReg = (code: string) => {
     setSelectedRegions(prev => {
@@ -208,14 +223,34 @@ function FeatureModal({ feature, regions, modules, onClose, onSave }: ModalProps
   const handleSave = async () => {
     setSaving(true)
     const mod = modules.find(m => m.key === moduleId)
-    await onSave({ name, description, status, fiscalYear, category, moduleId: mod?.id ?? null, regionCodes: Array.from(selectedRegions) })
+    const payload = { name, description, status, fiscalYear, category, moduleId: mod?.id ?? null, regionCodes: Array.from(selectedRegions) }
+
+    if (isEdit) {
+      await fetch(`/api/roadmap/${feature.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    } else {
+      await fetch('/api/roadmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+    }
     setSaving(false)
+    onSaved()
+  }
+
+  const handleDelete = async () => {
+    await fetch(`/api/roadmap/${feature!.id}`, { method: 'DELETE' })
+    onSaved()
   }
 
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
-        <h3>Edit Feature</h3>
+        <h3>{isEdit ? 'Edit Feature' : 'New Feature'}</h3>
         <div className="form-group" style={{ marginBottom: 12 }}>
           <label>Name</label>
           <input value={name} onChange={e => setName(e.target.value)} />
@@ -265,11 +300,30 @@ function FeatureModal({ feature, regions, modules, onClose, onSave }: ModalProps
             ))}
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn sm" onClick={onClose}>Cancel</button>
-          <button className="btn sm primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            {isEdit && (
+              <button className="btn sm" style={{ color: 'var(--coral)', borderColor: 'rgba(240,96,96,0.3)' }} onClick={() => setConfirmDelete(true)}>
+                Delete Feature
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn sm" onClick={onClose}>Cancel</button>
+            <button className="btn sm primary" onClick={handleSave} disabled={saving}>{saving ? 'Saving…' : isEdit ? 'Save' : 'Create'}</button>
+          </div>
         </div>
       </div>
+
+      {confirmDelete && (
+        <ConfirmDialog
+          message={`Delete feature "${feature!.name}"? This cannot be undone.`}
+          confirmLabel="Delete Feature"
+          danger
+          onConfirm={handleDelete}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
     </div>
   )
 }
