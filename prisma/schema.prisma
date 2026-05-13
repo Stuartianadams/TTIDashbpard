@@ -1,0 +1,350 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// TTI Dashboard — Prisma Schema
+//
+// Run:  npx prisma migrate dev --name init
+// Seed: npm run db:seed
+// ─────────────────────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+enum DeploymentType {
+  Hosted
+  OnPremise
+}
+
+enum BackupStrategy {
+  AAG
+  Replication
+}
+
+enum RoadmapStatus {
+  planned
+  in_progress
+  delivered
+  cancelled
+}
+
+enum RoadmapCategory {
+  Product_Software   // "Product - Software"
+  Product_Hardware   // "Product - Hardware"
+  Product_Data       // "Product - Data"
+  Engineering
+  Innovation
+}
+
+enum FiscalYear {
+  FY26
+  FY27
+  FY28
+  FY29
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM MODULES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Module {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  color       String
+  sortOrder   Int      @default(0)
+
+  deploymentModules  DeploymentModule[]
+  roadmapFeatures    RoadmapFeature[]
+  releaseComponents  ReleaseComponent[]
+  valueStreamModules ValueStreamModule[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Region {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  flag         String
+  color        String
+  totalUsers   Int      @default(0)
+
+  deployments     Deployment[]
+  regionalModules RegionalModule[]
+  roadmapRegions  RoadmapFeatureRegion[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("regions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEPLOYMENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Deployment {
+  id           String         @id @default(cuid())
+  regionId     String
+  region       Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  instance     String
+  type         DeploymentType
+  version      String
+  users        Int            @default(0)
+  backup       BackupStrategy
+  cti          Int            @default(0)
+
+  modules      DeploymentModule[]
+
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([regionId, instance])
+  @@map("deployments")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEPLOYMENT MODULES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model DeploymentModule {
+  id           String     @id @default(cuid())
+  deploymentId String
+  deployment   Deployment @relation(fields: [deploymentId], references: [id], onDelete: Cascade)
+  moduleId     String
+  module       Module     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  userCount    Int        @default(0)
+
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@unique([deploymentId, moduleId])
+  @@map("deployment_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGIONAL MODULES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RegionalModule {
+  id          String   @id @default(cuid())
+  regionId    String
+  region      Region   @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("regional_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROADMAP FEATURES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RoadmapFeature {
+  id          String          @id @default(cuid())
+  name        String
+  description String          @db.Text
+  category    RoadmapCategory
+  moduleId    String?
+  module      Module?         @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  fiscalYear  FiscalYear
+  status      RoadmapStatus   @default(planned)
+  userImpact  Int?
+
+  regions     RoadmapFeatureRegion[]
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("roadmap_features")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROADMAP FEATURE → REGION
+// ─────────────────────────────────────────────────────────────────────────────
+
+model RoadmapFeatureRegion {
+  id        String         @id @default(cuid())
+  featureId String
+  feature   RoadmapFeature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+  regionId  String
+  region    Region         @relation(fields: [regionId], references: [id], onDelete: Cascade)
+
+  notes     String?
+
+  @@unique([featureId, regionId])
+  @@map("roadmap_feature_regions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PLATFORM VERSIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model PlatformVersion {
+  id          String   @id @default(cuid())
+  version     String   @unique
+  releasedAt  DateTime?
+  notes       String?  @db.Text
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("platform_versions")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Release {
+  id              String             @id @default(cuid())
+  label           String   @unique
+  sortOrder       Int      @default(0)
+  isBaseline      Boolean  @default(false)
+  baselineCount   Int?
+  releasedAt      DateTime?
+  notes           String?  @db.Text
+
+  components      ReleaseComponent[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("releases")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RELEASE COMPONENTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ReleaseComponent {
+  id          String   @id @default(cuid())
+  releaseId   String
+  release     Release  @relation(fields: [releaseId], references: [id], onDelete: Cascade)
+  moduleId    String?
+  module      Module?  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  areaLabel   String?
+  count       Int      @default(0)
+
+  @@unique([releaseId, moduleId])
+  @@map("release_components")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM STAGES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamStage {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  label       String
+  color       String
+  textColor   String   @default("#ffffff")
+  sortOrder   Int      @default(0)
+  isRoadmap   Boolean  @default(false)
+
+  modules       ValueStreamModule[]
+  functionality ValueStreamFunctionality[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("value_stream_stages")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM MODULES
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamModule {
+  id            String           @id @default(cuid())
+  moduleId      String
+  module        Module           @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  stageStartId  String
+  stageStart    ValueStreamStage @relation(fields: [stageStartId], references: [id], onDelete: Cascade)
+  stageEndId    String
+  rowOrder      Int    @default(0)
+  isRoadmap     Boolean @default(false)
+  segmentIndex  Int    @default(0)
+
+  @@map("value_stream_modules")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VALUE STREAM FUNCTIONALITY
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ValueStreamFunctionality {
+  id          String           @id @default(cuid())
+  stageId     String
+  stage       ValueStreamStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  label       String
+  colorClass  String
+  sortOrder   Int    @default(0)
+  notes       String? @db.Text
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("value_stream_functionality")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXTERNAL SYSTEMS
+// ─────────────────────────────────────────────────────────────────────────────
+
+model ExternalSystem {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String
+  color       String   @default("#9b7af5")
+  sortOrder   Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("external_systems")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  entity      String
+  entityId    String
+  action      String
+  changedBy   String
+  diff        Json?
+  createdAt   DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_log")
+}
